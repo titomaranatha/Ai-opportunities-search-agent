@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/organisation.schema.json",
+  "title": "Organisation Profile",
+  "type": "object",
+  "required": ["profileVersion", "verificationStatus", "legalName", "country", "sectors", "stats", "branding"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "profileVersion": { "type": "string" },
+    "verificationStatus": { "enum": ["sample", "partially_verified", "verified"] },
+    "verificationNote": { "type": "string" },
+    "legalName": { "type": "string", "minLength": 1 },
+    "tradingName": { "type": "string" },
+    "innovationHub": { "type": "string" },
+    "country": { "type": "string" },
+    "sectors": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "mission": { "type": ["string", "null"] },
+    "registration": {
+      "type": "object",
+      "properties": {
+        "registeredWith": { "type": "string" },
+        "registrationNumber": { "type": ["string", "null"] },
+        "registrationType": { "type": ["string", "null"] },
+        "yearRegistered": { "type": ["integer", "null"] },
+        "sourceDocumentId": { "type": ["string", "null"] },
+        "verified": { "type": "boolean" }
+      },
+      "required": ["verified"]
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/stat" }
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "fileId"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "enum": ["pitch_deck", "cac_registration", "annual_report", "financial_statement", "impact_report", "founder_cv", "other"] },
+          "fileId": { "type": "string" },
+          "uploadedAt": { "type": "string", "format": "date-time" },
+          "extractedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      }
+    },
+    "contacts": {
+      "type": "object",
+      "properties": {
+        "primaryContactName": { "type": ["string", "null"] },
+        "primaryContactTitle": { "type": ["string", "null"] },
+        "email": { "type": ["string", "null"] },
+        "phone": { "type": ["string", "null"] },
+        "website": { "type": ["string", "null"] },
+        "address": { "type": ["string", "null"] }
+      }
+    },
+    "branding": {
+      "type": "object",
+      "required": ["primaryColor", "backgroundColor"],
+      "properties": {
+        "primaryColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "secondaryColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "backgroundColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "fontStack": { "type": "string" },
+        "logoUrl": { "type": ["string", "null"] }
+      }
+    },
+    "signature": {
+      "type": "object",
+      "properties": {
+        "senderName": { "type": ["string", "null"] },
+        "senderTitle": { "type": ["string", "null"] },
+        "organisationLine": { "type": "string" },
+        "disclaimer": { "type": ["string", "null"] }
+      }
+    }
+  },
+  "$defs": {
+    "stat": {
+      "type": "object",
+      "required": ["value", "source", "verified"],
+      "properties": {
+        "value": { "type": ["number", "string"] },
+        "qualifier": { "enum": ["exactly", "over", "approximately"] },
+        "asOf": { "type": ["string", "null"] },
+        "source": { "type": "string", "description": "'sample_data' or the id of an uploaded OrganisationDocument." },
+        "verified": { "type": "boolean" }
+      }
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/followup.schema.json",
+  "title": "Follow-up",
+  "type": "object",
+  "required": ["id", "opportunityId", "originalEmailId", "stage", "dueDate", "status"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "isSample": { "type": "boolean" },
+    "opportunityId": { "type": "string" },
+    "originalEmailId": { "type": "string" },
+    "threadId": { "type": ["string", "null"] },
+    "stage": { "enum": ["first", "second", "final"] },
+    "businessDaysAfterPrevious": { "type": "integer", "enum": [5, 10, 15] },
+    "dueDate": { "type": "string", "format": "date" },
+    "status": { "enum": ["scheduled", "due", "draft_created", "sent", "cancelled_replied", "cancelled_closed", "skipped"] },
+    "draftEmailId": { "type": ["string", "null"] },
+    "sentAt": { "type": ["string", "null"], "format": "date-time" },
+    "cancelledReason": { "type": ["string", "null"], "enum": ["reply_received", "opportunity_closed", "deadline_passed", "recipient_unsubscribed", "manually_cancelled", null] },
+    "replyCheck": {
+      "type": "object",
+      "properties": {
+        "lastCheckedAt": { "type": "string", "format": "date-time" },
+        "replyDetected": { "type": "boolean" },
+        "autoReplyIgnored": { "type": "boolean" }
+      }
+    }
+  }
+}

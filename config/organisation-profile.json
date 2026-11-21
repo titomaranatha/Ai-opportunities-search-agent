@@ -1,0 +1,54 @@
+{
+  "$schema": "../schemas/organisation.schema.json",
+  "profileVersion": "1.0.0",
+  "verificationStatus": "sample",
+  "verificationNote": "Values below are SAMPLE seed data supplied by the project owner. Replace them by uploading the pitch deck and CAC registration documents (workflow WF-04, step ingest-organisation-documents). The agent must never state a credential or achievement that is not marked verified or sourced from an uploaded document.",
+  "legalName": "Tech2Grassroots Africa",
+  "tradingName": "Tech2Grassroots Africa",
+  "innovationHub": "Kwara Innovation Lab (KIL)",
+  "country": "Nigeria",
+  "sectors": [
+    "Education Technology",
+    "Digital Skills Development",
+    "Artificial Intelligence",
+    "Youth Empowerment",
+    "Innovation",
+    "Entrepreneurship",
+    "STEM Education"
+  ],
+  "mission": null,
+  "registration": {
+    "registeredWith": "Corporate Affairs Commission (CAC)",
+    "registrationNumber": null,
+    "registrationType": null,
+    "yearRegistered": null,
+    "sourceDocumentId": null,
+    "verified": false
+  },
+  "stats": {
+    "partnerSchools": { "value": 15, "asOf": null, "source": "sample_data", "verified": false },
+    "learnersTrained": { "value": 5000, "qualifier": "over", "asOf": null, "source": "sample_data", "verified": false }
+  },
+  "documents": [],
+  "contacts": {
+    "primaryContactName": null,
+    "primaryContactTitle": null,
+    "email": null,
+    "phone": null,
+    "website": null,
+    "address": null
+  },
+  "branding": {
+    "primaryColor": "#4169E1",
+    "secondaryColor": "#1E3A8A",
+    "backgroundColor": "#FFFFFF",
+    "fontStack": "Helvetica, Arial, sans-serif",
+    "logoUrl": null
+  },
+  "signature": {
+    "senderName": null,
+    "senderTitle": null,
+    "organisationLine": "Tech2Grassroots Africa | Kwara Innovation Lab (KIL)",
+    "disclaimer": null
+  }
+}

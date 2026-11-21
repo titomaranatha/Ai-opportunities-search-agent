@@ -1,0 +1,94 @@
+{
+  "version": "1.0.0",
+  "timezone": "Africa/Lagos",
+  "dryRunDefault": true,
+  "schedules": {
+    "opportunityDiscovery": { "cron": "0 6 * * *", "description": "Daily discovery run at 06:00 Africa/Lagos" },
+    "followUpCheck": { "cron": "0 8 * * 1-5", "description": "Weekday follow-up check at 08:00" },
+    "deadlineMonitoring": { "cron": "0 7 * * *", "description": "Daily deadline scan at 07:00" },
+    "weeklyReport": { "cron": "30 7 * * 1", "description": "Monday 07:30 weekly digest" },
+    "monthlyReport": { "cron": "0 8 1 * *", "description": "First day of month, 08:00" }
+  },
+  "discovery": {
+    "maxResultsPerQuery": 10,
+    "maxPagesFetchedPerRun": 150,
+    "fetchTimeoutSeconds": 10,
+    "maxPageBytes": 204800,
+    "respectRobotsTxt": true,
+    "duplicateSimilarityThreshold": 0.8,
+    "officialSourcePolicy": "official_first",
+    "initialSources": [
+      {
+        "id": "src-linkedin-initial",
+        "name": "Initial LinkedIn research post",
+        "type": "social_post",
+        "url": "https://lnkd.in/p/gZ_53VQ4",
+        "enabled": true,
+        "extractionMode": "attempt_fetch_then_manual_import",
+        "notes": "LinkedIn commonly blocks unauthenticated automated access. If the fetch is blocked, WF-01 raises a notification asking a human to paste the post text or upload a screenshot/PDF. Credentials are never used to scrape LinkedIn."
+      }
+    ],
+    "sourceTypes": [
+      "official_funding_website",
+      "international_foundation",
+      "government_portal",
+      "development_agency",
+      "university_programme",
+      "startup_accelerator",
+      "corporate_funding_initiative",
+      "international_ngo",
+      "technology_company"
+    ]
+  },
+  "scoring": {
+    "minimumScoreToNotify": 65,
+    "minimumScoreToSuggestApplication": 50
+  },
+  "approvals": {
+    "initialEmailRequiresApproval": true,
+    "externalSendRequiresApproval": true,
+    "applicationSubmissionRequiresApproval": true,
+    "followUpApprovalMode": "approval_required",
+    "preAuthorisedFollowUpsAllowed": false,
+    "approvalBoundToContentHash": true,
+    "approverSource": "env:APPROVER_EMAILS"
+  },
+  "email": {
+    "defaultTone": "warm_professional",
+    "tones": ["formal", "warm_professional", "concise", "persuasive", "appreciative"],
+    "maxRecipientsPerEmail": 5,
+    "maxEmailsPerDay": 20,
+    "emailTypeTemplates": {
+      "grant_enquiry": "grant-enquiry.html",
+      "application_submission": "grant-application.html",
+      "fellowship_enquiry": "fellowship-enquiry.html",
+      "scholarship_enquiry": "fellowship-enquiry.html",
+      "partnership_proposal": "partnership-outreach.html",
+      "accelerator_application": "grant-application.html",
+      "follow_up": "application-followup.html",
+      "meeting_request": "partnership-outreach.html",
+      "thank_you": "application-followup.html"
+    },
+    "signatureTemplate": "professional-signature.html"
+  },
+  "followUps": {
+    "enabled": true,
+    "intervalsBusinessDays": { "first": 5, "second": 10, "final": 15 },
+    "maxFollowUps": 3,
+    "stopOn": ["reply_received", "opportunity_closed", "deadline_passed", "recipient_unsubscribed", "manually_cancelled"]
+  },
+  "deadlineMonitoring": {
+    "reminderThresholdsDays": [30, 14, 7, 3, 1],
+    "autoCloseExpired": true
+  },
+  "reporting": {
+    "weeklyDigestRecipients": "env:INTERNAL_NOTIFICATION_EMAIL",
+    "includeSections": ["pipeline", "new_opportunities", "upcoming_deadlines", "applications", "email_activity", "follow_ups", "errors"]
+  },
+  "logging": {
+    "entity": "WorkflowLog",
+    "level": "info",
+    "retentionDays": 180,
+    "redactPatterns": ["api_key", "token", "secret", "password"]
+  }
+}

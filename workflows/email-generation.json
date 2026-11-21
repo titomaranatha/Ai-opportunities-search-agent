@@ -1,0 +1,258 @@
+{
+  "id": "WF-05",
+  "name": "Professional Email Generation",
+  "version": "1.0.0",
+  "specType": "workflow-specification",
+  "description": "Generates a professional HTML email plus plain-text fallback for an enquiry, submission, partnership, follow-up, meeting request or thank-you, using the correct branded template, then runs quality checks. Produces drafts only; nothing is sent.",
+  "trigger": {
+    "type": "manual_or_workflow",
+    "sources": [
+      "Email Studio UI",
+      "WF-04 handoff",
+      "WF-06 regeneration request",
+      "WF-08 follow-up due"
+    ]
+  },
+  "inputs": [
+    {
+      "name": "emailType",
+      "type": "string",
+      "required": true,
+      "enum": [
+        "grant_enquiry",
+        "application_submission",
+        "fellowship_enquiry",
+        "scholarship_enquiry",
+        "partnership_proposal",
+        "accelerator_application",
+        "follow_up",
+        "meeting_request",
+        "thank_you"
+      ],
+      "description": "Determines the template and prompt."
+    },
+    {
+      "name": "opportunityId",
+      "type": "string",
+      "required": false,
+      "description": "Related opportunity."
+    },
+    {
+      "name": "applicationId",
+      "type": "string",
+      "required": false,
+      "description": "Related application (for submissions and attachments)."
+    },
+    {
+      "name": "tone",
+      "type": "string",
+      "required": false,
+      "default": "warm_professional",
+      "enum": [
+        "formal",
+        "warm_professional",
+        "concise",
+        "persuasive",
+        "appreciative"
+      ],
+      "description": "Professional tone selection."
+    },
+    {
+      "name": "recipients",
+      "type": "object",
+      "required": false,
+      "description": "{ to[], cc[], bcc[] }. Suggested from verified opportunity contacts only."
+    },
+    {
+      "name": "regenerationInstruction",
+      "type": "string",
+      "required": false,
+      "description": "Free-text instruction when the user asks for AI content regeneration."
+    },
+    {
+      "name": "followUpStage",
+      "type": "string",
+      "required": false,
+      "enum": [
+        "first",
+        "second",
+        "final"
+      ],
+      "description": "Required when emailType is follow_up."
+    }
+  ],
+  "steps": [
+    {
+      "id": "select-template",
+      "name": "Select template",
+      "type": "function",
+      "description": "Map emailType to a template using config/automation-settings.json#/email/emailTypeTemplates.",
+      "uses": "backend:selectEmailTemplate",
+      "output": "templateId",
+      "next": "load-context"
+    },
+    {
+      "id": "load-context",
+      "name": "Load context",
+      "type": "entity_read",
+      "description": "Read the Opportunity, Application, organisation profile, prior SentEmail on the thread (for follow-ups) and the sender signature.",
+      "entities": [
+        "Opportunity",
+        "Application",
+        "SentEmail"
+      ],
+      "next": "generate-content"
+    },
+    {
+      "id": "generate-content",
+      "name": "Generate email content",
+      "type": "ai",
+      "description": "Produce subject, preheader, greeting name, body paragraphs, up to 4 key points, call-to-action label and URL, and sign-off. Respect the selected tone. For regeneration, apply regenerationInstruction while keeping facts unchanged.",
+      "uses": "integration:Core.InvokeLLM",
+      "output": "content",
+      "next": "sanitise-and-render"
+    },
+    {
+      "id": "sanitise-and-render",
+      "name": "Sanitise and render HTML",
+      "type": "function",
+      "description": "Escape all text values, allow only <p>, <strong>, <em>, <ul>, <li>, <br> and <a> in body fragments, then render the template and inject the shared signature. Implemented in src/lib/render-email.js.",
+      "uses": "backend:renderEmail",
+      "codeRef": "src/lib/render-email.js",
+      "output": "htmlBody",
+      "next": "plain-text-fallback"
+    },
+    {
+      "id": "plain-text-fallback",
+      "name": "Generate plain-text fallback",
+      "type": "function",
+      "description": "Derive textBody from the final HTML (links become \"label (url)\").",
+      "uses": "backend:htmlToText",
+      "codeRef": "src/lib/render-email.js",
+      "output": "textBody",
+      "next": "quality-checks"
+    },
+    {
+      "id": "quality-checks",
+      "name": "Run quality checks",
+      "type": "function",
+      "description": "Fail the draft if: any placeholder unresolved, subject empty or over 150 chars, any link host not on the opportunity's verified official domains, any [[NEEDS_INPUT]] marker, any claim not traceable to the organisation profile, or recipient not a verified contact. Failed checks are recorded and shown in the preview.",
+      "uses": "backend:emailQualityChecks",
+      "output": "qualityChecks",
+      "next": "save-draft"
+    },
+    {
+      "id": "save-draft",
+      "name": "Save draft",
+      "type": "entity_write",
+      "description": "Create or update the EmailDraft with status \"draft\". regenerationCount increments on each regeneration.",
+      "entities": [
+        "EmailDraft"
+      ],
+      "setsStatus": {
+        "entity": "EmailDraft",
+        "status": "draft"
+      },
+      "next": "END"
+    }
+  ],
+  "aiInstructions": {
+    "used": true,
+    "systemPrompt": "You write emails for {{organisation.tradingName}} ({{organisation.innovationHub}}), Nigeria. Write concise, courteous, specific emails in the requested tone with a clear single call to action. Use ONLY facts present in the supplied context (organisation profile, uploaded documents, retrieved page text). If a fact is missing, output null or a [[NEEDS_INPUT: description]] marker. Never invent credentials, statistics, URLs, deadlines or funding amounts. Never promise outcomes, never state deadlines or amounts that are not in the verified opportunity record, and never include attachments you were not given.",
+    "guardrails": [
+      "Use British English.",
+      "No exaggerated claims or flattery of the recipient.",
+      "Do not include confidential internal scores or notes.",
+      "Follow-ups must reference the original message politely and add no new unsupported claims."
+    ],
+    "outputFormat": "JSON: { subject, preheader, greeting_name, body_paragraphs[], key_points[], cta_label, cta_url }"
+  },
+  "integrations": [
+    {
+      "name": "LLM",
+      "type": "base44_integration",
+      "base44Mapping": "Core.InvokeLLM"
+    }
+  ],
+  "output": {
+    "format": "json",
+    "description": "EmailDraft with htmlBody, textBody, templateData and qualityChecks.",
+    "schemaRef": "schemas/email.schema.json",
+    "example": "examples/sample-email.json"
+  },
+  "errorHandling": {
+    "defaultPolicy": {
+      "retries": 2,
+      "backoff": "exponential",
+      "baseDelaySeconds": 5,
+      "timeoutSeconds": 120
+    },
+    "onUnrecoverableFailure": [
+      "Set the run status to \"failed\" and stop; never continue past a failed safety check.",
+      "Write a WorkflowLog entry with level \"error\" and the failing stepId.",
+      "Send an internal alert to INTERNAL_NOTIFICATION_EMAIL (internal only; never to external recipients)."
+    ],
+    "idempotency": "Every run carries a runId. Writes use natural keys (fingerprint, draftId, followUpId) so a retried run cannot create duplicates or send twice.",
+    "specificCases": [
+      {
+        "condition": "Required template variable missing",
+        "action": "Do not render; return the missing variable list to the caller."
+      },
+      {
+        "condition": "Quality check fails",
+        "action": "Save the draft with failed checks visible; block progression to approval until fixed or regenerated."
+      }
+    ]
+  },
+  "approval": {
+    "required": false,
+    "rationale": "Drafting only. Approval is enforced in WF-06 and re-verified in WF-07 before any send."
+  },
+  "logging": {
+    "entity": "WorkflowLog",
+    "level": "info",
+    "correlationId": "runId",
+    "fields": [
+      "workflowId",
+      "runId",
+      "stepId",
+      "status",
+      "startedAt",
+      "durationMs",
+      "entityType",
+      "entityId",
+      "message",
+      "error"
+    ],
+    "events": [
+      "draft_generation_started",
+      "quality_check_failed",
+      "draft_saved"
+    ],
+    "redaction": "Never log credentials, OAuth tokens or full email bodies. Log IDs and content hashes instead."
+  },
+  "handoff": [
+    {
+      "to": "WF-06",
+      "file": "workflows/email-preview-and-approval.json",
+      "condition": "EmailDraft.status == \"draft\" and all quality checks pass."
+    }
+  ],
+  "base44": {
+    "entities": [
+      "EmailDraft",
+      "Opportunity",
+      "Application",
+      "SentEmail",
+      "WorkflowLog"
+    ],
+    "backendFunctions": [
+      "selectEmailTemplate",
+      "generateEmailContent",
+      "renderEmail",
+      "emailQualityChecks"
+    ],
+    "automation": "Invoked from the Email Studio page and from other workflows; no schedule of its own.",
+    "notes": "Executable reference logic: src/lib/render-email.js. Templates live in templates/."
+  }
+}

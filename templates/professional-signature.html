@@ -1,0 +1,17 @@
+<!-- Shared signature partial. The renderer injects it into every template through the signature_html variable. -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-top:2px solid #4169E1;font-family:Helvetica, Arial, sans-serif;">
+  <tr>
+    <td style="padding:12px 0 0 0;font-size:14px;line-height:20px;color:#334155;">
+      <div style="font-size:15px;line-height:22px;font-weight:bold;color:#1E3A8A;">{{sender_name}}</div>
+      <div style="color:#64748B;">{{sender_title}}</div>
+      <div style="padding-top:6px;font-weight:bold;color:#334155;">{{org_name}}</div>
+      <div style="color:#64748B;">{{hub_name}}</div>
+      <div style="padding-top:6px;">
+        <a href="mailto:{{sender_email}}" style="color:#4169E1;text-decoration:none;">{{sender_email}}</a>
+        &nbsp;|&nbsp; {{sender_phone}}
+      </div>
+      <div><a href="{{org_website}}" target="_blank" style="color:#4169E1;text-decoration:none;">{{org_website}}</a></div>
+      <div style="padding-top:8px;font-size:11px;line-height:16px;color:#64748B;">{{disclaimer_text}}</div>
+    </td>
+  </tr>
+</table>

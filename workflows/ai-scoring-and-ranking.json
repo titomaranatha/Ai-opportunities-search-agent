@@ -1,0 +1,221 @@
+{
+  "id": "WF-03",
+  "name": "AI Scoring and Ranking Engine",
+  "version": "1.0.0",
+  "specType": "workflow-specification",
+  "description": "Scores each verified opportunity against the organisation profile with the 100-point weighted model, applies disqualifier caps deterministically, ranks the pipeline and asks a human whether to pursue.",
+  "trigger": {
+    "type": "entity_event",
+    "event": "update",
+    "entity": "Opportunity",
+    "filter": {
+      "status": "verified"
+    },
+    "alsoTriggeredBy": [
+      "manual re-score",
+      "organisation profile updated"
+    ]
+  },
+  "inputs": [
+    {
+      "name": "opportunityId",
+      "type": "string",
+      "required": true,
+      "description": "Opportunity to score."
+    }
+  ],
+  "steps": [
+    {
+      "id": "load-context",
+      "name": "Load opportunity, profile and criteria",
+      "type": "entity_read",
+      "description": "Read the Opportunity, the organisation profile (config/organisation-profile.json, updated from uploaded documents) and config/scoring-criteria.json.",
+      "entities": [
+        "Opportunity",
+        "OrganisationDocument"
+      ],
+      "next": "ai-assess"
+    },
+    {
+      "id": "ai-assess",
+      "name": "AI assessment",
+      "type": "ai",
+      "description": "Produce per-criterion sub-scores with a reason each, plus eligibility assessment, strengths, weaknesses, missing requirements and disqualification risks. Sub-scores must respect each criterion maximum and the rubric. Unverified organisation facts (verified=false) must be treated as unconfirmed and lower confidence.",
+      "uses": "integration:Core.InvokeLLM",
+      "output": "assessment",
+      "next": "compute-score"
+    },
+    {
+      "id": "compute-score",
+      "name": "Compute total deterministically",
+      "type": "function",
+      "description": "Validate sub-scores against the criteria file, sum them, apply the disqualifier cap (39) if any hard disqualifier is present and assign the band. The model-reported total is ignored. Implemented in src/lib/scoring.js.",
+      "uses": "backend:computeScore",
+      "codeRef": "src/lib/scoring.js",
+      "onError": {
+        "action": "retry_ai_once_then_fail",
+        "note": "Invalid or out-of-range sub-scores trigger one regeneration."
+      },
+      "output": "score",
+      "next": "save-score"
+    },
+    {
+      "id": "save-score",
+      "name": "Save score and update opportunity",
+      "type": "entity_write",
+      "description": "Append an OpportunityScore history record and copy the latest summary to Opportunity.score.",
+      "entities": [
+        "OpportunityScore",
+        "Opportunity"
+      ],
+      "setsStatus": {
+        "entity": "Opportunity",
+        "status": "scored"
+      },
+      "next": "notify-ranking"
+    },
+    {
+      "id": "notify-ranking",
+      "name": "Rank and notify",
+      "type": "notify",
+      "description": "Recompute the ranked list. If total >= minimumScoreToNotify (65), send an internal Notification with the recommended next action.",
+      "entities": [
+        "Notification"
+      ],
+      "next": "human-pursue-decision"
+    },
+    {
+      "id": "human-pursue-decision",
+      "name": "Human decision: pursue or archive",
+      "type": "approval",
+      "description": "A human reviews the score card and chooses Pursue, Enquire first, Monitor or Archive. Pursue sets the status to pursue_approved. This is an internal decision gate; nothing is sent externally.",
+      "approver": "env:APPROVER_EMAILS",
+      "decisions": [
+        "pursue",
+        "enquire_first",
+        "monitor",
+        "archive"
+      ],
+      "setsStatus": {
+        "entity": "Opportunity",
+        "status": "pursue_approved"
+      },
+      "entities": [
+        "Opportunity"
+      ],
+      "next": "END"
+    }
+  ],
+  "aiInstructions": {
+    "used": true,
+    "systemPrompt": "You are a grants and business development analyst for {{organisation.tradingName}}. Score the opportunity using the supplied rubric. Use ONLY facts present in the supplied context (organisation profile, uploaded documents, retrieved page text). If a fact is missing, output null or a [[NEEDS_INPUT: description]] marker. Never invent credentials, statistics, URLs, deadlines or funding amounts. Be conservative: if eligibility depends on a document or fact the organisation has not verified, score lower and list it under missingRequirements.",
+    "guardrails": [
+      "Never exceed a criterion maximum.",
+      "Do not copy the funder's marketing language into strengths; cite concrete matches.",
+      "List every possible disqualification risk, even unlikely ones."
+    ],
+    "outputFormat": "JSON: { subScores{key:number}, eligibilityAssessment, strengths[], weaknesses[], missingRequirements[], disqualificationRisks[], disqualifiers[], recommendedNextAction, reasons{key:string} }"
+  },
+  "scoringModel": {
+    "source": "config/scoring-criteria.json",
+    "weights": {
+      "organisational_eligibility": 25,
+      "mission_alignment": 20,
+      "financial_benefit": 15,
+      "geographic_eligibility": 15,
+      "application_feasibility": 10,
+      "strategic_growth_potential": 10,
+      "deadline_readiness": 5
+    },
+    "total": 100
+  },
+  "integrations": [
+    {
+      "name": "LLM",
+      "type": "base44_integration",
+      "base44Mapping": "Core.InvokeLLM with response_json_schema"
+    }
+  ],
+  "output": {
+    "format": "json",
+    "description": "Score card: overall score, band, eligibility assessment, strengths, weaknesses, missing requirements, disqualification risks, recommended next action.",
+    "schemaRef": "schemas/opportunity.schema.json",
+    "schemaPointer": "#/properties/score"
+  },
+  "errorHandling": {
+    "defaultPolicy": {
+      "retries": 2,
+      "backoff": "exponential",
+      "baseDelaySeconds": 5,
+      "timeoutSeconds": 120
+    },
+    "onUnrecoverableFailure": [
+      "Set the run status to \"failed\" and stop; never continue past a failed safety check.",
+      "Write a WorkflowLog entry with level \"error\" and the failing stepId.",
+      "Send an internal alert to INTERNAL_NOTIFICATION_EMAIL (internal only; never to external recipients)."
+    ],
+    "idempotency": "Every run carries a runId. Writes use natural keys (fingerprint, draftId, followUpId) so a retried run cannot create duplicates or send twice.",
+    "specificCases": [
+      {
+        "condition": "Sub-score missing or above maximum",
+        "action": "Regenerate once; if still invalid mark the run failed and leave the opportunity \"verified\"."
+      },
+      {
+        "condition": "Organisation profile marked \"sample\"",
+        "action": "Proceed but add the caveat \"scored against unverified organisation data\" to the score card."
+      }
+    ]
+  },
+  "approval": {
+    "required": true,
+    "type": "internal_decision",
+    "gate": "human-pursue-decision",
+    "rationale": "A person decides whether to invest preparation effort. No external action occurs."
+  },
+  "logging": {
+    "entity": "WorkflowLog",
+    "level": "info",
+    "correlationId": "runId",
+    "fields": [
+      "workflowId",
+      "runId",
+      "stepId",
+      "status",
+      "startedAt",
+      "durationMs",
+      "entityType",
+      "entityId",
+      "message",
+      "error"
+    ],
+    "events": [
+      "scoring_started",
+      "score_computed",
+      "score_capped_by_disqualifier",
+      "pursue_decision_recorded"
+    ],
+    "redaction": "Never log credentials, OAuth tokens or full email bodies. Log IDs and content hashes instead."
+  },
+  "handoff": [
+    {
+      "to": "WF-04",
+      "file": "workflows/application-preparation.json",
+      "condition": "Opportunity.status == \"pursue_approved\""
+    }
+  ],
+  "base44": {
+    "entities": [
+      "Opportunity",
+      "OpportunityScore",
+      "OrganisationDocument",
+      "Notification",
+      "WorkflowLog"
+    ],
+    "backendFunctions": [
+      "scoreOpportunity",
+      "computeScore"
+    ],
+    "automation": "Entity automation on Opportunity status = verified.",
+    "notes": "Executable reference logic: src/lib/scoring.js with unit tests in tests/scoring.test.js."
+  }
+}

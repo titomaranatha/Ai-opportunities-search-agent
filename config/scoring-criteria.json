@@ -1,0 +1,99 @@
+{
+  "version": "1.0.0",
+  "totalPoints": 100,
+  "disqualifierCap": 39,
+  "criteria": [
+    {
+      "key": "organisational_eligibility",
+      "label": "Organisational eligibility",
+      "maxPoints": 25,
+      "description": "Does the organisation meet the stated legal-entity type, registration, age, track-record and sector requirements?",
+      "rubric": [
+        { "range": "20-25", "meaning": "Meets every stated requirement with documentary support." },
+        { "range": "10-19", "meaning": "Meets most requirements; some are unclear or need documents we do not yet hold." },
+        { "range": "1-9", "meaning": "Meets few requirements or key ones are unverifiable." },
+        { "range": "0", "meaning": "Clearly ineligible." }
+      ]
+    },
+    {
+      "key": "mission_alignment",
+      "label": "Mission alignment",
+      "maxPoints": 20,
+      "description": "Overlap between the funder's priorities and the organisation's sectors (EdTech, digital skills, AI, youth, STEM, innovation, entrepreneurship).",
+      "rubric": [
+        { "range": "16-20", "meaning": "Core priority of the funder matches a core activity of the organisation." },
+        { "range": "8-15", "meaning": "Partial overlap; the application would need reframing." },
+        { "range": "0-7", "meaning": "Weak or tangential overlap." }
+      ]
+    },
+    {
+      "key": "financial_benefit",
+      "label": "Financial benefit",
+      "maxPoints": 15,
+      "description": "Value of funding or in-kind benefit relative to the effort required, including non-monetary benefits such as mentorship, credits and network access.",
+      "rubric": [
+        { "range": "12-15", "meaning": "Substantial funding or high-value in-kind support." },
+        { "range": "6-11", "meaning": "Moderate value." },
+        { "range": "0-5", "meaning": "Minimal or undisclosed value." }
+      ]
+    },
+    {
+      "key": "geographic_eligibility",
+      "label": "Geographic eligibility",
+      "maxPoints": 15,
+      "description": "Whether organisations in Nigeria (and Africa) are explicitly eligible and whether any location, residency or delivery-country restrictions apply.",
+      "rubric": [
+        { "range": "12-15", "meaning": "Nigeria is explicitly eligible." },
+        { "range": "6-11", "meaning": "Africa-wide or open eligibility, Nigeria not named." },
+        { "range": "1-5", "meaning": "Unclear; needs funder confirmation." },
+        { "range": "0", "meaning": "Nigeria is excluded." }
+      ]
+    },
+    {
+      "key": "application_feasibility",
+      "label": "Application feasibility",
+      "maxPoints": 10,
+      "description": "Effort, document burden and complexity relative to team capacity.",
+      "rubric": [
+        { "range": "8-10", "meaning": "Lightweight application; documents largely on hand." },
+        { "range": "4-7", "meaning": "Moderate effort." },
+        { "range": "0-3", "meaning": "Heavy burden or many missing documents." }
+      ]
+    },
+    {
+      "key": "strategic_growth_potential",
+      "label": "Strategic growth potential",
+      "maxPoints": 10,
+      "description": "Potential for partnerships, credibility, follow-on funding and scale.",
+      "rubric": [
+        { "range": "8-10", "meaning": "Strong partnership or credibility upside." },
+        { "range": "4-7", "meaning": "Some upside." },
+        { "range": "0-3", "meaning": "Little strategic upside." }
+      ]
+    },
+    {
+      "key": "deadline_readiness",
+      "label": "Deadline readiness",
+      "maxPoints": 5,
+      "description": "Whether the time left before the deadline is sufficient to prepare a quality application.",
+      "rubric": [
+        { "range": "4-5", "meaning": "Ample time (about 21+ days) or rolling." },
+        { "range": "2-3", "meaning": "Tight but feasible." },
+        { "range": "0-1", "meaning": "Too late, or deadline unknown and unconfirmable." }
+      ]
+    }
+  ],
+  "bands": [
+    { "label": "Priority", "min": 80, "action": "prepare_application" },
+    { "label": "Strong", "min": 65, "action": "review_and_decide" },
+    { "label": "Moderate", "min": 50, "action": "monitor_or_enquire" },
+    { "label": "Low", "min": 0, "action": "archive" }
+  ],
+  "hardDisqualifiers": [
+    "Nigeria or Nigerian-registered organisations explicitly excluded",
+    "Organisation type explicitly excluded (for example individuals only, universities only)",
+    "Deadline has passed and the programme is not rolling",
+    "Applicant fee or request for bank details before any selection (possible scam)",
+    "Official source cannot be located or verified"
+  ]
+}

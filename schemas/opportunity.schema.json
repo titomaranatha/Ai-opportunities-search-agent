@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/opportunity.schema.json",
+  "title": "Opportunity",
+  "type": "object",
+  "required": ["id", "title", "category", "sourceUrls", "status", "discoveredAt"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "isSample": { "type": "boolean", "description": "True for illustrative records that must never be treated as real opportunities." },
+    "title": { "type": "string", "minLength": 1 },
+    "category": {
+      "enum": ["grant", "fellowship", "scholarship", "hackathon", "funded_training", "international_funded", "accelerator", "innovation_challenge", "entrepreneurship_programme", "tech_ai_funding", "research_development_grant"]
+    },
+    "funder": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "enum": ["foundation", "government", "development_agency", "university", "accelerator", "corporate", "ngo", "technology_company", "other"] },
+        "country": { "type": ["string", "null"] },
+        "officialWebsite": { "type": ["string", "null"], "format": "uri" }
+      }
+    },
+    "officialUrl": { "type": ["string", "null"], "format": "uri" },
+    "applicationUrl": { "type": ["string", "null"], "format": "uri" },
+    "sourceUrls": { "type": "array", "items": { "type": "string", "format": "uri" }, "minItems": 1 },
+    "sourceId": { "type": ["string", "null"] },
+    "sourceClassification": { "enum": ["official", "aggregator", "social", "unknown"] },
+    "summary": { "type": ["string", "null"] },
+    "deadline": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["fixed", "rolling", "unknown", "closed"] },
+        "date": { "type": ["string", "null"], "format": "date" },
+        "timezone": { "type": ["string", "null"] },
+        "evidence": { "type": ["string", "null"] }
+      }
+    },
+    "benefits": {
+      "type": "object",
+      "properties": {
+        "summary": { "type": ["string", "null"] },
+        "amountMin": { "type": ["number", "null"], "minimum": 0 },
+        "amountMax": { "type": ["number", "null"], "minimum": 0 },
+        "currency": { "type": ["string", "null"], "pattern": "^[A-Z]{3}$" },
+        "nonFinancial": { "type": "array", "items": { "type": "string" } },
+        "evidence": { "type": ["string", "null"] }
+      }
+    },
+    "eligibility": {
+      "type": "object",
+      "properties": {
+        "countries": { "type": "array", "items": { "type": "string" } },
+        "nigeriaEligible": { "enum": ["yes", "no", "unclear"] },
+        "africaEligible": { "enum": ["yes", "no", "unclear"] },
+        "organisationTypes": { "type": "array", "items": { "type": "string" } },
+        "requirements": { "type": "array", "items": { "type": "string" } },
+        "evidence": { "type": ["string", "null"] }
+      }
+    },
+    "requiredDocuments": { "type": "array", "items": { "type": "string" } },
+    "verification": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["unverified", "verified", "needs_review", "rejected"] },
+        "checkedAt": { "type": ["string", "null"], "format": "date-time" },
+        "evidence": { "type": "array", "items": { "type": "string" } },
+        "redFlags": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "score": {
+      "type": ["object", "null"],
+      "properties": {
+        "total": { "type": "number", "minimum": 0, "maximum": 100 },
+        "band": { "enum": ["Priority", "Strong", "Moderate", "Low"] },
+        "eligibilityAssessment": { "enum": ["eligible", "likely_eligible", "unclear", "likely_ineligible", "ineligible"] },
+        "breakdown": { "type": "object", "additionalProperties": { "type": "number", "minimum": 0 } },
+        "strengths": { "type": "array", "items": { "type": "string" } },
+        "weaknesses": { "type": "array", "items": { "type": "string" } },
+        "missingRequirements": { "type": "array", "items": { "type": "string" } },
+        "disqualificationRisks": { "type": "array", "items": { "type": "string" } },
+        "recommendedNextAction": { "type": "string" },
+        "scoredAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "status": {
+      "enum": ["pending_verification", "verified", "needs_review", "rejected", "scored", "pursue_approved", "in_preparation", "ready_for_submission", "submitted", "awaiting_response", "awarded", "unsuccessful", "expired", "withdrawn"]
+    },
+    "fingerprint": { "type": "string" },
+    "discoveredAt": { "type": "string", "format": "date-time" },
+    "lastSeenAt": { "type": "string", "format": "date-time" }
+  }
+}

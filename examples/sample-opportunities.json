@@ -1,0 +1,224 @@
+[
+  {
+    "id": "opp-sample-001",
+    "title": "SAMPLE: Example Digital Skills Innovation Grant",
+    "category": "grant",
+    "funder": {
+      "name": "Example Foundation for Digital Inclusion",
+      "type": "foundation",
+      "country": null,
+      "officialWebsite": "https://example.org"
+    },
+    "officialUrl": "https://example.org/grants/digital-skills",
+    "applicationUrl": "https://example.org/grants/digital-skills/apply",
+    "sourceUrls": [
+      "https://example.org/grants/digital-skills"
+    ],
+    "sourceId": "src-sample",
+    "sourceClassification": "official",
+    "summary": "Illustrative record showing the data shape produced by WF-01. Not a real programme.",
+    "deadline": {
+      "type": "fixed",
+      "date": "2027-03-31",
+      "timezone": "Africa/Lagos",
+      "evidence": "Illustrative evidence sentence."
+    },
+    "benefits": {
+      "summary": "Illustrative grant for digital skills programmes.",
+      "amountMin": 10000,
+      "amountMax": 50000,
+      "currency": "USD",
+      "nonFinancial": [
+        "Mentorship"
+      ],
+      "evidence": "Illustrative evidence sentence."
+    },
+    "eligibility": {
+      "countries": [
+        "Nigeria",
+        "Ghana",
+        "Kenya"
+      ],
+      "nigeriaEligible": "yes",
+      "africaEligible": "yes",
+      "organisationTypes": [
+        "Registered non-profit",
+        "Social enterprise"
+      ],
+      "requirements": [
+        "Legal registration",
+        "Two years of programme delivery"
+      ],
+      "evidence": "Illustrative evidence sentence."
+    },
+    "requiredDocuments": [
+      "Registration certificate",
+      "Programme budget",
+      "Impact summary"
+    ],
+    "verification": {
+      "status": "verified",
+      "checkedAt": "2026-11-12T09:30:00Z",
+      "evidence": [
+        "Official page reachable over https",
+        "Deadline matches record"
+      ],
+      "redFlags": []
+    },
+    "score": {
+      "total": 78,
+      "band": "Strong",
+      "eligibilityAssessment": "likely_eligible",
+      "breakdown": {
+        "organisational_eligibility": 18,
+        "mission_alignment": 17,
+        "financial_benefit": 11,
+        "geographic_eligibility": 14,
+        "application_feasibility": 7,
+        "strategic_growth_potential": 7,
+        "deadline_readiness": 4
+      },
+      "strengths": [
+        "Sector match: digital skills and youth empowerment"
+      ],
+      "weaknesses": [
+        "Two-year delivery track record must be evidenced from uploaded documents"
+      ],
+      "missingRequirements": [
+        "Registration certificate (upload CAC document)"
+      ],
+      "disqualificationRisks": [
+        "Registration status unverified in the sample profile"
+      ],
+      "recommendedNextAction": "Upload CAC documents, then approve preparation.",
+      "scoredAt": "2026-11-12T10:00:00Z"
+    },
+    "status": "scored",
+    "discoveredAt": "2026-11-10T06:05:00Z",
+    "lastSeenAt": "2026-11-12T06:04:00Z",
+    "isSample": true,
+    "fingerprint": "50f94fe097740074daf38a5871125f1f2ce7242c8a9115fd9df0743ce3a328c6"
+  },
+  {
+    "id": "opp-sample-002",
+    "title": "SAMPLE: Example Africa AI Accelerator Cohort",
+    "category": "accelerator",
+    "funder": {
+      "name": "Example Accelerator Network",
+      "type": "accelerator",
+      "country": null,
+      "officialWebsite": "https://example.org"
+    },
+    "officialUrl": "https://example.org/accelerator",
+    "applicationUrl": null,
+    "sourceUrls": [
+      "https://example.org/accelerator",
+      "https://example.org/news/accelerator-open-call"
+    ],
+    "sourceId": "src-sample",
+    "sourceClassification": "official",
+    "summary": "Illustrative accelerator record with an unclear deadline.",
+    "deadline": {
+      "type": "unknown",
+      "date": null,
+      "timezone": null,
+      "evidence": null
+    },
+    "benefits": {
+      "summary": "Illustrative equity-free support.",
+      "amountMin": null,
+      "amountMax": null,
+      "currency": null,
+      "nonFinancial": [
+        "Mentorship",
+        "Cloud credits"
+      ],
+      "evidence": null
+    },
+    "eligibility": {
+      "countries": [
+        "Africa"
+      ],
+      "nigeriaEligible": "unclear",
+      "africaEligible": "yes",
+      "organisationTypes": [
+        "Early-stage startups"
+      ],
+      "requirements": [],
+      "evidence": null
+    },
+    "requiredDocuments": [],
+    "verification": {
+      "status": "needs_review",
+      "checkedAt": "2026-11-12T09:40:00Z",
+      "evidence": [
+        "Official page reachable"
+      ],
+      "redFlags": [
+        "deadline_not_found"
+      ]
+    },
+    "score": null,
+    "status": "needs_review",
+    "discoveredAt": "2026-11-11T06:07:00Z",
+    "lastSeenAt": "2026-11-12T06:04:00Z",
+    "isSample": true,
+    "fingerprint": "f43025700d5002bfe2ae6fc87ba169c7abaccce9bd615802dda7bebc2c67276b"
+  },
+  {
+    "id": "opp-sample-003",
+    "title": "SAMPLE: Example Youth Innovation Hackathon",
+    "category": "hackathon",
+    "funder": {
+      "name": "Example Technology Company",
+      "type": "technology_company",
+      "country": null,
+      "officialWebsite": "https://example.org"
+    },
+    "officialUrl": null,
+    "applicationUrl": null,
+    "sourceUrls": [
+      "https://example.org/aggregator/hackathon-listing"
+    ],
+    "sourceId": "src-sample",
+    "sourceClassification": "aggregator",
+    "summary": "Illustrative record found only on an aggregator page; official source not yet located.",
+    "deadline": {
+      "type": "fixed",
+      "date": "2026-12-15",
+      "timezone": "Africa/Lagos",
+      "evidence": "Illustrative evidence sentence."
+    },
+    "benefits": {
+      "summary": null,
+      "amountMin": null,
+      "amountMax": null,
+      "currency": null,
+      "nonFinancial": [],
+      "evidence": null
+    },
+    "eligibility": {
+      "countries": [],
+      "nigeriaEligible": "unclear",
+      "africaEligible": "unclear",
+      "organisationTypes": [],
+      "requirements": [],
+      "evidence": null
+    },
+    "requiredDocuments": [],
+    "verification": {
+      "status": "unverified",
+      "checkedAt": null,
+      "evidence": [],
+      "redFlags": [
+        "official_url_not_found"
+      ]
+    },
+    "score": null,
+    "status": "pending_verification",
+    "discoveredAt": "2026-11-13T06:09:00Z",
+    "lastSeenAt": "2026-11-13T06:09:00Z",
+    "isSample": true,
+    "fingerprint": "da122b17f1f1d8146f0649c10aca41c758fc6e6b1f3e5e46238e0b5772a45921"
+  }
+]

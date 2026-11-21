@@ -1,0 +1,19 @@
+{
+  "id": "fu-sample-001",
+  "isSample": true,
+  "opportunityId": "opp-sample-001",
+  "originalEmailId": "email-sample-001",
+  "threadId": null,
+  "stage": "first",
+  "businessDaysAfterPrevious": 5,
+  "dueDate": "2026-12-08",
+  "status": "scheduled",
+  "draftEmailId": null,
+  "sentAt": null,
+  "cancelledReason": null,
+  "replyCheck": {
+    "lastCheckedAt": "2026-12-02T08:00:00Z",
+    "replyDetected": false,
+    "autoReplyIgnored": false
+  }
+}

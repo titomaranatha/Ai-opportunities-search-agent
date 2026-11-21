@@ -1,0 +1,269 @@
+{
+  "id": "WF-07",
+  "name": "Email Sending (Gmail)",
+  "version": "1.0.0",
+  "specType": "workflow-specification",
+  "description": "Sends an approved email through Gmail as multipart/alternative (HTML plus plain text), after re-verifying approval integrity, recipient safety and limits. Records the sent message and creates the follow-up schedule.",
+  "trigger": {
+    "type": "entity_event",
+    "event": "update",
+    "entity": "EmailDraft",
+    "filter": {
+      "status": "approved"
+    }
+  },
+  "inputs": [
+    {
+      "name": "draftId",
+      "type": "string",
+      "required": true,
+      "description": "Approved EmailDraft."
+    }
+  ],
+  "steps": [
+    {
+      "id": "verify-approval",
+      "name": "Verify approval integrity",
+      "type": "function",
+      "description": "Re-check status, approver, approvedAt and that the stored contentHash equals the hash of the current content. Any mismatch aborts the run and returns the draft to pending_approval.",
+      "uses": "backend:verifyApproval",
+      "codeRef": "src/lib/approval.js",
+      "onError": {
+        "action": "abort",
+        "note": "Never send on a failed verification."
+      },
+      "next": "check-dry-run"
+    },
+    {
+      "id": "check-dry-run",
+      "name": "Check DRY_RUN",
+      "type": "logic",
+      "description": "If DRY_RUN is true, log the would-be send and stop without contacting Gmail. DRY_RUN is true by default in .env.example.",
+      "envVars": [
+        "DRY_RUN"
+      ],
+      "next": [
+        {
+          "when": "dry_run",
+          "goto": "log-dry-run"
+        },
+        {
+          "when": "live",
+          "goto": "safety-checks"
+        }
+      ]
+    },
+    {
+      "id": "log-dry-run",
+      "name": "Log dry run",
+      "type": "entity_write",
+      "description": "Write a WorkflowLog entry \"dry_run_send_skipped\".",
+      "entities": [
+        "WorkflowLog"
+      ],
+      "next": "END"
+    },
+    {
+      "id": "safety-checks",
+      "name": "Recipient and rate checks",
+      "type": "function",
+      "description": "Confirm recipients are not suppressed, count is within maxRecipientsPerEmail, daily total within maxEmailsPerDay, and the draft has not already been sent (idempotency by draftId).",
+      "uses": "backend:sendSafetyChecks",
+      "entities": [
+        "SuppressionList",
+        "SentEmail"
+      ],
+      "next": "send-via-gmail"
+    },
+    {
+      "id": "send-via-gmail",
+      "name": "Send via Gmail",
+      "type": "send_email",
+      "description": "Send multipart/alternative with HTML and text parts, selected attachments, and the configured sender. Uses the Base44 Gmail connector, or the Gmail API with GMAIL_* variables.",
+      "uses": "connector:gmail",
+      "envVars": [
+        "GMAIL_SENDER_ADDRESS",
+        "GMAIL_CLIENT_ID",
+        "GMAIL_CLIENT_SECRET",
+        "GMAIL_REFRESH_TOKEN"
+      ],
+      "requiresApprovalFrom": "verify-approval",
+      "onError": {
+        "action": "retry",
+        "maxRetries": 2,
+        "backoff": "exponential",
+        "baseDelaySeconds": 10,
+        "thenAction": "mark_send_failed",
+        "note": "Before each retry, search Sent for the draft marker header to avoid double sends."
+      },
+      "setsStatus": {
+        "entity": "EmailDraft",
+        "status": "sending"
+      },
+      "next": "record-sent"
+    },
+    {
+      "id": "record-sent",
+      "name": "Record sent email",
+      "type": "entity_write",
+      "description": "Create SentEmail with Gmail messageId, threadId and sentAt; set EmailDraft.status \"sent\" (or \"send_failed\" on failure).",
+      "entities": [
+        "SentEmail",
+        "EmailDraft"
+      ],
+      "setsStatus": {
+        "entity": "EmailDraft",
+        "status": "sent"
+      },
+      "alsoSetsStatuses": [
+        {
+          "entity": "EmailDraft",
+          "status": "send_failed"
+        }
+      ],
+      "next": "update-opportunity"
+    },
+    {
+      "id": "update-opportunity",
+      "name": "Update opportunity status",
+      "type": "entity_write",
+      "description": "For application submissions set Opportunity to submitted; for first contact set awaiting_response.",
+      "entities": [
+        "Opportunity"
+      ],
+      "setsStatus": {
+        "entity": "Opportunity",
+        "status": "awaiting_response"
+      },
+      "alsoSetsStatuses": [
+        {
+          "entity": "Opportunity",
+          "status": "submitted"
+        }
+      ],
+      "next": "schedule-follow-ups"
+    },
+    {
+      "id": "schedule-follow-ups",
+      "name": "Schedule follow-ups",
+      "type": "function",
+      "description": "If FOLLOWUP_ENABLED and the email type warrants it, create the first FollowUp due 5 business days after sentAt (src/lib/business-days.js). Later stages are created when the previous one is actually sent.",
+      "uses": "backend:scheduleFollowUp",
+      "codeRef": "src/lib/business-days.js",
+      "envVars": [
+        "FOLLOWUP_ENABLED",
+        "HOLIDAY_DATES"
+      ],
+      "entities": [
+        "FollowUp"
+      ],
+      "next": "END"
+    }
+  ],
+  "aiInstructions": {
+    "used": false,
+    "reason": "Sending is deterministic. No generative step may alter an approved message."
+  },
+  "integrations": [
+    {
+      "name": "Gmail",
+      "type": "connector",
+      "base44Mapping": "Base44 Gmail connector or backend function using the Gmail API",
+      "envVars": [
+        "GMAIL_SENDER_ADDRESS",
+        "GMAIL_CLIENT_ID",
+        "GMAIL_CLIENT_SECRET",
+        "GMAIL_REFRESH_TOKEN"
+      ]
+    }
+  ],
+  "output": {
+    "format": "json",
+    "description": "SentEmail record (messageId, threadId, sentAt) and first FollowUp.",
+    "schemaRef": "schemas/email.schema.json",
+    "example": "examples/sample-email.json"
+  },
+  "errorHandling": {
+    "defaultPolicy": {
+      "retries": 2,
+      "backoff": "exponential",
+      "baseDelaySeconds": 5,
+      "timeoutSeconds": 120
+    },
+    "onUnrecoverableFailure": [
+      "Set the run status to \"failed\" and stop; never continue past a failed safety check.",
+      "Write a WorkflowLog entry with level \"error\" and the failing stepId.",
+      "Send an internal alert to INTERNAL_NOTIFICATION_EMAIL (internal only; never to external recipients)."
+    ],
+    "idempotency": "Every run carries a runId. Writes use natural keys (fingerprint, draftId, followUpId) so a retried run cannot create duplicates or send twice.",
+    "specificCases": [
+      {
+        "condition": "Approval hash mismatch",
+        "action": "Abort, set status pending_approval, log \"approval_voided\"."
+      },
+      {
+        "condition": "Gmail 401/403",
+        "action": "Abort, alert internal address that the connector needs re-authorisation; do not retry."
+      },
+      {
+        "condition": "Gmail 5xx or timeout",
+        "action": "Check for an existing sent message, then retry up to 2 times; otherwise mark send_failed."
+      }
+    ]
+  },
+  "approval": {
+    "required": true,
+    "type": "external_communication",
+    "gate": "verify-approval",
+    "rationale": "Approval is produced in WF-06 and independently re-verified here. This workflow cannot create an approval."
+  },
+  "logging": {
+    "entity": "WorkflowLog",
+    "level": "info",
+    "correlationId": "runId",
+    "fields": [
+      "workflowId",
+      "runId",
+      "stepId",
+      "status",
+      "startedAt",
+      "durationMs",
+      "entityType",
+      "entityId",
+      "message",
+      "error"
+    ],
+    "events": [
+      "send_attempted",
+      "send_blocked",
+      "send_succeeded",
+      "send_failed",
+      "dry_run_send_skipped"
+    ],
+    "redaction": "Never log credentials, OAuth tokens or full email bodies. Log IDs and content hashes instead."
+  },
+  "handoff": [
+    {
+      "to": "WF-08",
+      "file": "workflows/follow-up-automation.json",
+      "condition": "FollowUp created with status \"scheduled\"."
+    }
+  ],
+  "base44": {
+    "entities": [
+      "EmailDraft",
+      "SentEmail",
+      "Opportunity",
+      "FollowUp",
+      "SuppressionList",
+      "WorkflowLog"
+    ],
+    "backendFunctions": [
+      "verifyApproval",
+      "sendSafetyChecks",
+      "sendApprovedEmail",
+      "scheduleFollowUp"
+    ],
+    "automation": "Entity automation on EmailDraft status = approved; the backend function is the only code path allowed to call Gmail send."
+  }
+}

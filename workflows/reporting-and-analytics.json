@@ -1,0 +1,221 @@
+{
+  "id": "WF-10",
+  "name": "Reporting and Analytics",
+  "version": "1.0.0",
+  "specType": "workflow-specification",
+  "description": "Computes pipeline and activity metrics from stored records and produces weekly and monthly reports with an AI-written narrative that is constrained to the computed numbers.",
+  "trigger": {
+    "type": "schedule",
+    "schedule": {
+      "cron": "30 7 * * 1",
+      "timezone": "Africa/Lagos",
+      "settingsRef": "config/automation-settings.json#/schedules/weeklyReport"
+    },
+    "alsoTriggeredBy": [
+      "monthly schedule (0 8 1 * *)",
+      "manual"
+    ]
+  },
+  "inputs": [
+    {
+      "name": "period",
+      "type": "string",
+      "required": false,
+      "default": "week",
+      "enum": [
+        "week",
+        "month",
+        "custom"
+      ],
+      "description": "Reporting period."
+    },
+    {
+      "name": "from",
+      "type": "string",
+      "required": false,
+      "description": "ISO start date for custom period."
+    },
+    {
+      "name": "to",
+      "type": "string",
+      "required": false,
+      "description": "ISO end date for custom period."
+    }
+  ],
+  "steps": [
+    {
+      "id": "resolve-period",
+      "name": "Resolve period",
+      "type": "function",
+      "description": "Convert the period input to concrete start and end dates in Africa/Lagos.",
+      "uses": "backend:resolvePeriod",
+      "next": "query-records"
+    },
+    {
+      "id": "query-records",
+      "name": "Query records",
+      "type": "entity_read",
+      "description": "Read Opportunity, OpportunityScore, Application, SentEmail, FollowUp and WorkflowLog records in the period.",
+      "entities": [
+        "Opportunity",
+        "OpportunityScore",
+        "Application",
+        "SentEmail",
+        "FollowUp",
+        "WorkflowLog"
+      ],
+      "next": "compute-metrics"
+    },
+    {
+      "id": "compute-metrics",
+      "name": "Compute metrics",
+      "type": "function",
+      "description": "Compute: discovered, verified, rejected, average score by category, pursued, applications by status, emails sent, reply rate (only where reply detection was available), follow-ups sent, awarded and unsuccessful counts, upcoming deadlines in 30 days, and pipeline value per currency. Amounts in different currencies are never summed together.",
+      "uses": "backend:computeMetrics",
+      "output": "metrics",
+      "next": "write-narrative"
+    },
+    {
+      "id": "write-narrative",
+      "name": "Write narrative summary",
+      "type": "ai",
+      "description": "Summarise the metrics in plain language: highlights, risks, recommended actions. Every number in the text must appear in the metrics object.",
+      "uses": "integration:Core.InvokeLLM",
+      "output": "narrative",
+      "next": "verify-narrative"
+    },
+    {
+      "id": "verify-narrative",
+      "name": "Verify narrative numbers",
+      "type": "function",
+      "description": "Extract numbers from the narrative and confirm each exists in the metrics. Regenerate once on mismatch; on repeated mismatch omit the narrative.",
+      "uses": "backend:verifyNarrativeNumbers",
+      "next": "save-report"
+    },
+    {
+      "id": "save-report",
+      "name": "Save report",
+      "type": "entity_write",
+      "description": "Create a Report record with metrics, narrative and an HTML rendering.",
+      "entities": [
+        "Report"
+      ],
+      "next": "deliver-digest"
+    },
+    {
+      "id": "deliver-digest",
+      "name": "Deliver internal digest",
+      "type": "notify",
+      "description": "Email the report to the internal recipient(s) only; link to the full report in the app.",
+      "envVars": [
+        "INTERNAL_NOTIFICATION_EMAIL"
+      ],
+      "entities": [
+        "Notification"
+      ],
+      "next": "END"
+    }
+  ],
+  "aiInstructions": {
+    "used": true,
+    "systemPrompt": "You are an analyst writing a short internal report for {{organisation.tradingName}}. Use only the numbers in the supplied metrics object. Do not estimate, extrapolate or round beyond what is given. Use ONLY facts present in the supplied context (organisation profile, uploaded documents, retrieved page text). If a fact is missing, output null or a [[NEEDS_INPUT: description]] marker. Never invent credentials, statistics, URLs, deadlines or funding amounts.",
+    "guardrails": [
+      "No predictions presented as facts.",
+      "Where a metric is unavailable, say it was not available."
+    ],
+    "outputFormat": "JSON: { headline, highlights[], risks[], recommendedActions[] }"
+  },
+  "integrations": [
+    {
+      "name": "Internal notification email",
+      "type": "base44_integration",
+      "base44Mapping": "Core.SendEmail (internal address only)",
+      "envVars": [
+        "INTERNAL_NOTIFICATION_EMAIL"
+      ]
+    },
+    {
+      "name": "LLM",
+      "type": "base44_integration",
+      "base44Mapping": "Core.InvokeLLM"
+    }
+  ],
+  "output": {
+    "format": "json",
+    "description": "Report entity: metrics, narrative and HTML.",
+    "schemaRef": null,
+    "note": "Report is a Base44-native entity; see BASE44_IMPLEMENTATION.md for its fields."
+  },
+  "errorHandling": {
+    "defaultPolicy": {
+      "retries": 2,
+      "backoff": "exponential",
+      "baseDelaySeconds": 5,
+      "timeoutSeconds": 120
+    },
+    "onUnrecoverableFailure": [
+      "Set the run status to \"failed\" and stop; never continue past a failed safety check.",
+      "Write a WorkflowLog entry with level \"error\" and the failing stepId.",
+      "Send an internal alert to INTERNAL_NOTIFICATION_EMAIL (internal only; never to external recipients)."
+    ],
+    "idempotency": "Every run carries a runId. Writes use natural keys (fingerprint, draftId, followUpId) so a retried run cannot create duplicates or send twice.",
+    "specificCases": [
+      {
+        "condition": "No records in period",
+        "action": "Produce an empty-state report instead of failing."
+      },
+      {
+        "condition": "Narrative contains numbers not in metrics",
+        "action": "Regenerate once; then omit the narrative."
+      }
+    ]
+  },
+  "approval": {
+    "required": false,
+    "rationale": "Internal reporting only. Reports are never sent to external recipients by this workflow."
+  },
+  "logging": {
+    "entity": "WorkflowLog",
+    "level": "info",
+    "correlationId": "runId",
+    "fields": [
+      "workflowId",
+      "runId",
+      "stepId",
+      "status",
+      "startedAt",
+      "durationMs",
+      "entityType",
+      "entityId",
+      "message",
+      "error"
+    ],
+    "events": [
+      "report_started",
+      "metrics_computed",
+      "narrative_rejected",
+      "report_delivered"
+    ],
+    "redaction": "Never log credentials, OAuth tokens or full email bodies. Log IDs and content hashes instead."
+  },
+  "handoff": [],
+  "base44": {
+    "entities": [
+      "Opportunity",
+      "OpportunityScore",
+      "Application",
+      "SentEmail",
+      "FollowUp",
+      "Report",
+      "Notification",
+      "WorkflowLog"
+    ],
+    "backendFunctions": [
+      "resolvePeriod",
+      "computeMetrics",
+      "verifyNarrativeNumbers",
+      "runReporting"
+    ],
+    "automation": "Two scheduled automations: weekly Monday 07:30 and monthly on the 1st at 08:00 (Africa/Lagos)."
+  }
+}

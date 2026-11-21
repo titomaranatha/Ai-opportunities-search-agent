@@ -1,0 +1,70 @@
+{
+  "id": "app-sample-001",
+  "isSample": true,
+  "opportunityId": "opp-sample-001",
+  "status": "needs_input",
+  "components": [
+    {
+      "type": "organisation_profile",
+      "title": "Organisation profile",
+      "content": "Tech2Grassroots Africa is a Nigerian organisation working in education technology, digital skills, artificial intelligence, youth empowerment and STEM education, through its innovation hub, Kwara Innovation Lab (KIL). [[NEEDS_INPUT: year of registration and registration number from the CAC certificate]]",
+      "wordCount": 43,
+      "status": "needs_input",
+      "sources": [
+        {
+          "documentId": "doc-sample-pitch-deck",
+          "locator": "slide 2"
+        }
+      ],
+      "needsInput": [
+        "Year of registration",
+        "CAC registration number"
+      ]
+    },
+    {
+      "type": "impact_statement",
+      "title": "Impact statement",
+      "content": "The organisation reports partnerships with 15 schools and training of more than 5,000 learners. [[NEEDS_INPUT: confirm figures and reporting period against the impact report]]",
+      "wordCount": 28,
+      "status": "needs_input",
+      "sources": [
+        {
+          "documentId": "doc-sample-pitch-deck",
+          "locator": "slide 5"
+        }
+      ],
+      "needsInput": [
+        "Confirm learner and school figures"
+      ]
+    },
+    {
+      "type": "supporting_documents_checklist",
+      "title": "Supporting documents",
+      "content": null,
+      "wordCount": 0,
+      "status": "not_started",
+      "sources": [],
+      "needsInput": []
+    }
+  ],
+  "budget": null,
+  "checklist": [
+    {
+      "requirement": "Legal registration",
+      "state": "missing",
+      "evidenceDocumentId": null
+    },
+    {
+      "requirement": "Programme budget",
+      "state": "missing",
+      "evidenceDocumentId": null
+    },
+    {
+      "requirement": "Impact summary",
+      "state": "partially_met",
+      "evidenceDocumentId": "doc-sample-pitch-deck"
+    }
+  ],
+  "review": null,
+  "submission": null
+}

@@ -1,0 +1,280 @@
+{
+  "id": "WF-04",
+  "name": "Application Preparation",
+  "version": "1.0.0",
+  "specType": "workflow-specification",
+  "description": "Builds the application package for a pursued opportunity from the organisation's uploaded documents: requirement checklist, gap analysis and drafts of every required component, followed by human review. Never submits anything externally.",
+  "trigger": {
+    "type": "entity_event",
+    "event": "update",
+    "entity": "Opportunity",
+    "filter": {
+      "status": "pursue_approved"
+    },
+    "alsoTriggeredBy": [
+      "manual",
+      "new organisation document uploaded (re-check gaps)"
+    ]
+  },
+  "inputs": [
+    {
+      "name": "opportunityId",
+      "type": "string",
+      "required": true,
+      "description": "Opportunity to prepare for."
+    },
+    {
+      "name": "components",
+      "type": "string[]",
+      "required": false,
+      "description": "Subset of components to (re)generate. Defaults to those the funder requires."
+    }
+  ],
+  "steps": [
+    {
+      "id": "ingest-organisation-documents",
+      "name": "Ingest organisation documents",
+      "type": "integration",
+      "description": "For any OrganisationDocument not yet extracted (pitch deck, CAC registration, reports, CVs), run document extraction and store text and structured facts. Update the organisation profile; facts without a document source stay verified=false.",
+      "uses": "integration:Core.ExtractDataFromUploadedFile",
+      "entities": [
+        "OrganisationDocument"
+      ],
+      "output": "knowledgeBase",
+      "next": "extract-requirements"
+    },
+    {
+      "id": "extract-requirements",
+      "name": "Extract application requirements",
+      "type": "ai",
+      "description": "Read the official application page and guidelines; produce a checklist of required questions, documents, word limits and formats.",
+      "uses": "integration:Core.InvokeLLM",
+      "output": "requirementChecklist[]",
+      "next": "gap-analysis"
+    },
+    {
+      "id": "gap-analysis",
+      "name": "Gap analysis",
+      "type": "function",
+      "description": "Match each requirement to knowledge-base evidence. States: met, partially_met, missing. Missing items create needsInput tasks for a human.",
+      "uses": "backend:gapAnalysis",
+      "output": "checklist[]",
+      "next": "generate-components"
+    },
+    {
+      "id": "generate-components",
+      "name": "Generate components",
+      "type": "ai",
+      "description": "For each required component (grant proposal, application responses, organisation profile, project summary, impact statement, founder biography, project budget, cover letter, supporting-documents checklist) generate a draft grounded in the knowledge base. Record the source document and locator for each factual claim.",
+      "loop": {
+        "over": "components"
+      },
+      "uses": "integration:Core.InvokeLLM",
+      "output": "components[]",
+      "next": "grounding-check"
+    },
+    {
+      "id": "grounding-check",
+      "name": "Grounding and fabrication check",
+      "type": "ai",
+      "description": "A second pass verifies that every number, credential, partnership and achievement in each draft appears in a cited source. Unsupported claims are removed and replaced with [[NEEDS_INPUT: ...]].",
+      "uses": "integration:Core.InvokeLLM",
+      "output": "verifiedComponents[]",
+      "next": "budget-sanity-check"
+    },
+    {
+      "id": "budget-sanity-check",
+      "name": "Budget consistency check",
+      "type": "function",
+      "description": "Verify budget lines sum to the total, stay within the funder's stated range and use the funder's currency.",
+      "uses": "backend:checkBudget",
+      "onError": {
+        "action": "flag",
+        "note": "Mismatch sets the component to needs_input."
+      },
+      "next": "save-application"
+    },
+    {
+      "id": "save-application",
+      "name": "Save application drafts",
+      "type": "entity_write",
+      "description": "Create or update the Application. Status is needs_input if any [[NEEDS_INPUT]] marker or missing requirement remains, otherwise in_review.",
+      "entities": [
+        "Application",
+        "Opportunity"
+      ],
+      "setsStatus": {
+        "entity": "Application",
+        "status": "in_review"
+      },
+      "alsoSetsStatuses": [
+        {
+          "entity": "Application",
+          "status": "needs_input"
+        },
+        {
+          "entity": "Application",
+          "status": "preparing"
+        },
+        {
+          "entity": "Opportunity",
+          "status": "in_preparation"
+        }
+      ],
+      "next": "human-review"
+    },
+    {
+      "id": "human-review",
+      "name": "Human review and approval",
+      "type": "approval",
+      "description": "An authorised reviewer edits and approves the package. Approval is required before the application can be marked ready_for_submission. Submission itself (portal or email) is performed by a human, or via WF-05 to WF-07 for email submissions.",
+      "approver": "env:APPROVER_EMAILS",
+      "decisions": [
+        "approve",
+        "request_changes",
+        "reject"
+      ],
+      "setsStatus": {
+        "entity": "Application",
+        "status": "ready_for_submission"
+      },
+      "alsoSetsStatuses": [
+        {
+          "entity": "Opportunity",
+          "status": "ready_for_submission"
+        }
+      ],
+      "entities": [
+        "Application",
+        "Opportunity"
+      ],
+      "next": "record-submission"
+    },
+    {
+      "id": "record-submission",
+      "name": "Record submission",
+      "type": "manual_task",
+      "description": "After a human submits through the funder portal or form, they record method, date and confirmation reference. The system never submits portal forms by itself.",
+      "entities": [
+        "Application",
+        "Opportunity"
+      ],
+      "setsStatus": {
+        "entity": "Application",
+        "status": "submitted"
+      },
+      "alsoSetsStatuses": [
+        {
+          "entity": "Opportunity",
+          "status": "submitted"
+        }
+      ],
+      "next": "END"
+    }
+  ],
+  "aiInstructions": {
+    "used": true,
+    "systemPrompt": "You are a professional grant writer for {{organisation.tradingName}}. Write in clear, specific, evidence-led prose that follows the funder's own question wording and word limits. Use ONLY facts present in the supplied context (organisation profile, uploaded documents, retrieved page text). If a fact is missing, output null or a [[NEEDS_INPUT: description]] marker. Never invent credentials, statistics, URLs, deadlines or funding amounts. Mark every missing fact with [[NEEDS_INPUT: ...]].",
+    "guardrails": [
+      "Never claim registration numbers, partnerships, awards, budgets or beneficiary counts that are not in a cited document.",
+      "Sample statistics (verified=false) may be used only with the wording \"reported by the organisation\" and must be flagged for confirmation.",
+      "Do not copy text from the funder's own materials into answers."
+    ],
+    "outputFormat": "JSON per component: { type, title, content, wordCount, sources[{documentId, locator}], needsInput[] }"
+  },
+  "integrations": [
+    {
+      "name": "Document upload and extraction",
+      "type": "base44_integration",
+      "base44Mapping": "Core.UploadFile, Core.ExtractDataFromUploadedFile"
+    },
+    {
+      "name": "LLM",
+      "type": "base44_integration",
+      "base44Mapping": "Core.InvokeLLM (file_urls for documents)"
+    }
+  ],
+  "output": {
+    "format": "json",
+    "description": "Application with components, checklist, sources and review status.",
+    "schemaRef": "schemas/application.schema.json",
+    "example": "examples/sample-application.json"
+  },
+  "errorHandling": {
+    "defaultPolicy": {
+      "retries": 2,
+      "backoff": "exponential",
+      "baseDelaySeconds": 5,
+      "timeoutSeconds": 120
+    },
+    "onUnrecoverableFailure": [
+      "Set the run status to \"failed\" and stop; never continue past a failed safety check.",
+      "Write a WorkflowLog entry with level \"error\" and the failing stepId.",
+      "Send an internal alert to INTERNAL_NOTIFICATION_EMAIL (internal only; never to external recipients)."
+    ],
+    "idempotency": "Every run carries a runId. Writes use natural keys (fingerprint, draftId, followUpId) so a retried run cannot create duplicates or send twice.",
+    "specificCases": [
+      {
+        "condition": "Document extraction fails",
+        "action": "Keep the file, mark extractedAt null, continue with remaining documents and flag the gap."
+      },
+      {
+        "condition": "Grounding check removes more than 30% of a draft",
+        "action": "Set component to needs_input and request source documents instead of re-generating blindly."
+      }
+    ]
+  },
+  "approval": {
+    "required": true,
+    "type": "human_review",
+    "gate": "human-review",
+    "rationale": "Applications make representations on behalf of the organisation. A human must approve before anything is submitted externally."
+  },
+  "logging": {
+    "entity": "WorkflowLog",
+    "level": "info",
+    "correlationId": "runId",
+    "fields": [
+      "workflowId",
+      "runId",
+      "stepId",
+      "status",
+      "startedAt",
+      "durationMs",
+      "entityType",
+      "entityId",
+      "message",
+      "error"
+    ],
+    "events": [
+      "preparation_started",
+      "gap_found",
+      "component_generated",
+      "unsupported_claim_removed",
+      "review_decision_recorded"
+    ],
+    "redaction": "Never log credentials, OAuth tokens or full email bodies. Log IDs and content hashes instead."
+  },
+  "handoff": [
+    {
+      "to": "WF-05",
+      "file": "workflows/email-generation.json",
+      "condition": "Application.status == \"ready_for_submission\" and submission method is email, or an enquiry email is requested."
+    }
+  ],
+  "base44": {
+    "entities": [
+      "Application",
+      "Opportunity",
+      "OrganisationDocument",
+      "WorkflowLog"
+    ],
+    "backendFunctions": [
+      "ingestOrganisationDocuments",
+      "gapAnalysis",
+      "generateApplicationComponent",
+      "checkBudget"
+    ],
+    "automation": "Entity automation on Opportunity status = pursue_approved; document-upload automation on OrganisationDocument create."
+  }
+}

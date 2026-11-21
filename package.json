@@ -1,0 +1,21 @@
+{
+  "name": "ai-funding-opportunities-agent",
+  "version": "1.0.0",
+  "description": "Workflow specifications, schemas, email templates and validation tooling for an AI-powered Funding & Opportunities Intelligence Agent (Tech2Grassroots Africa / Kwara Innovation Lab).",
+  "license": "MIT",
+  "private": true,
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "validate:config": "node scripts/validate-config.js",
+    "validate:schemas": "node scripts/validate-schemas.js",
+    "validate:workflows": "node scripts/validate-workflows.js",
+    "validate:templates": "node scripts/validate-templates.js",
+    "validate": "node scripts/validate-all.js",
+    "preview": "node scripts/build-email-preview.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  }
+}

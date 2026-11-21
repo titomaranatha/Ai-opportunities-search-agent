@@ -1,0 +1,258 @@
+{
+  "id": "WF-06",
+  "name": "Email Preview and Approval",
+  "version": "1.0.0",
+  "specType": "workflow-specification",
+  "description": "Presents a draft in the Email Studio with true rendered desktop and mobile previews, lets the user edit every field, regenerate content or change tone, and records an explicit approval bound to a content hash. Nothing can be sent without this approval.",
+  "trigger": {
+    "type": "entity_event",
+    "event": "update",
+    "entity": "EmailDraft",
+    "filter": {
+      "status": "draft"
+    },
+    "alsoTriggeredBy": [
+      "user opens a draft in Email Studio"
+    ]
+  },
+  "inputs": [
+    {
+      "name": "draftId",
+      "type": "string",
+      "required": true,
+      "description": "EmailDraft to review."
+    }
+  ],
+  "uiRequirements": {
+    "page": "Email Studio",
+    "previewRendering": "The preview MUST render the actual HTML email, not the HTML source. Use an <iframe sandbox=\"\" srcdoc=\"...\"> (no scripts, no same-origin) for each preview. Desktop frame width 700 px; mobile frame width 375 px. The plain-text fallback is shown on a separate tab.",
+    "editableFields": [
+      "subject",
+      "to",
+      "cc",
+      "bcc",
+      "attachments",
+      "tone",
+      "body content (via regeneration or direct edit of templateData)"
+    ],
+    "actions": [
+      "Save edits",
+      "Regenerate with instruction",
+      "Change tone",
+      "Approve",
+      "Reject",
+      "Cancel draft"
+    ],
+    "referenceImplementation": "scripts/build-email-preview.js produces a static two-frame preview page from any template."
+  },
+  "steps": [
+    {
+      "id": "load-draft",
+      "name": "Load draft and context",
+      "type": "entity_read",
+      "description": "Read the EmailDraft, related Opportunity and attachment candidates (OrganisationDocument and Application files).",
+      "entities": [
+        "EmailDraft",
+        "Opportunity",
+        "OrganisationDocument"
+      ],
+      "next": "render-previews"
+    },
+    {
+      "id": "render-previews",
+      "name": "Render desktop and mobile previews",
+      "type": "function",
+      "description": "Render htmlBody into two sandboxed iframes and textBody into a plain-text tab. Re-render after every edit.",
+      "uses": "ui:EmailPreview",
+      "output": "previews",
+      "next": "user-edits"
+    },
+    {
+      "id": "user-edits",
+      "name": "User edits",
+      "type": "manual_task",
+      "description": "User edits subject, recipients (to, cc, bcc), attachments and tone. Each edit re-runs quality checks and invalidates any existing approval.",
+      "entities": [
+        "EmailDraft"
+      ],
+      "next": [
+        {
+          "when": "regenerate_requested",
+          "goto": "regenerate"
+        },
+        {
+          "when": "edits_complete",
+          "goto": "pre-send-checklist"
+        },
+        {
+          "when": "cancelled",
+          "goto": "cancel-draft"
+        }
+      ]
+    },
+    {
+      "id": "regenerate",
+      "name": "Regenerate content",
+      "type": "workflow_call",
+      "description": "Call WF-05 with the user's instruction and/or new tone, then return to render-previews. Capped at 10 regenerations per draft.",
+      "calls": "WF-05",
+      "next": "render-previews",
+      "limits": {
+        "maxRegenerations": 10
+      }
+    },
+    {
+      "id": "pre-send-checklist",
+      "name": "Pre-send checklist",
+      "type": "function",
+      "description": "Show and enforce: recipients valid and within maxRecipientsPerEmail; no recipient on the SuppressionList; subject present; attachments selected and under size limit; links point to verified domains; no unresolved placeholders; DRY_RUN status displayed prominently.",
+      "uses": "backend:preSendChecklist",
+      "output": "checklistResult",
+      "next": "final-approval"
+    },
+    {
+      "id": "final-approval",
+      "name": "Final approval",
+      "type": "approval",
+      "description": "An authorised approver (APPROVER_EMAILS) approves, rejects or sends back. On approval, store approvedBy, approvedAt and contentHash (src/lib/approval.js) and set status \"approved\". Any later change to subject, recipients, body or attachments voids the approval.",
+      "approver": "env:APPROVER_EMAILS",
+      "decisions": [
+        "approve",
+        "reject",
+        "request_changes"
+      ],
+      "codeRef": "src/lib/approval.js",
+      "entities": [
+        "EmailDraft"
+      ],
+      "setsStatus": {
+        "entity": "EmailDraft",
+        "status": "approved"
+      },
+      "alsoSetsStatuses": [
+        {
+          "entity": "EmailDraft",
+          "status": "pending_approval"
+        },
+        {
+          "entity": "EmailDraft",
+          "status": "rejected"
+        }
+      ],
+      "next": "END"
+    },
+    {
+      "id": "cancel-draft",
+      "name": "Cancel draft",
+      "type": "entity_write",
+      "description": "Set status to cancelled; log the reason.",
+      "entities": [
+        "EmailDraft"
+      ],
+      "setsStatus": {
+        "entity": "EmailDraft",
+        "status": "cancelled"
+      },
+      "next": "END"
+    }
+  ],
+  "aiInstructions": {
+    "used": false,
+    "reason": "No AI call in this workflow; regeneration is delegated to WF-05 (step regenerate)."
+  },
+  "integrations": [
+    {
+      "name": "Email Studio UI",
+      "type": "base44_page",
+      "base44Mapping": "Custom page with sandboxed iframe previews and EmailDraft form"
+    },
+    {
+      "name": "WF-05",
+      "type": "workflow",
+      "base44Mapping": "Backend function generateEmailContent"
+    }
+  ],
+  "output": {
+    "format": "json",
+    "description": "EmailDraft with status approved (with approval block and contentHash), rejected or cancelled.",
+    "schemaRef": "schemas/email.schema.json"
+  },
+  "errorHandling": {
+    "defaultPolicy": {
+      "retries": 2,
+      "backoff": "exponential",
+      "baseDelaySeconds": 5,
+      "timeoutSeconds": 120
+    },
+    "onUnrecoverableFailure": [
+      "Set the run status to \"failed\" and stop; never continue past a failed safety check.",
+      "Write a WorkflowLog entry with level \"error\" and the failing stepId.",
+      "Send an internal alert to INTERNAL_NOTIFICATION_EMAIL (internal only; never to external recipients)."
+    ],
+    "idempotency": "Every run carries a runId. Writes use natural keys (fingerprint, draftId, followUpId) so a retried run cannot create duplicates or send twice.",
+    "specificCases": [
+      {
+        "condition": "Approver not in APPROVER_EMAILS",
+        "action": "Reject the approval attempt, log \"unauthorised_approval_attempt\"."
+      },
+      {
+        "condition": "Draft edited after approval",
+        "action": "Set status back to pending_approval and clear the approval record."
+      }
+    ]
+  },
+  "approval": {
+    "required": true,
+    "type": "external_communication",
+    "gate": "final-approval",
+    "rationale": "Every external message needs explicit human approval tied to the exact content that will be sent."
+  },
+  "logging": {
+    "entity": "WorkflowLog",
+    "level": "info",
+    "correlationId": "runId",
+    "fields": [
+      "workflowId",
+      "runId",
+      "stepId",
+      "status",
+      "startedAt",
+      "durationMs",
+      "entityType",
+      "entityId",
+      "message",
+      "error"
+    ],
+    "events": [
+      "preview_rendered",
+      "draft_edited",
+      "regeneration_requested",
+      "approval_recorded",
+      "approval_voided",
+      "draft_rejected"
+    ],
+    "redaction": "Never log credentials, OAuth tokens or full email bodies. Log IDs and content hashes instead."
+  },
+  "handoff": [
+    {
+      "to": "WF-07",
+      "file": "workflows/email-sending.json",
+      "condition": "EmailDraft.status == \"approved\""
+    }
+  ],
+  "base44": {
+    "entities": [
+      "EmailDraft",
+      "Opportunity",
+      "OrganisationDocument",
+      "SuppressionList",
+      "WorkflowLog"
+    ],
+    "backendFunctions": [
+      "preSendChecklist",
+      "approveEmailDraft"
+    ],
+    "automation": "Interactive page; backend function approveEmailDraft must verify the caller's identity against APPROVER_EMAILS server-side.",
+    "notes": "Never trust a client-side flag for approval state."
+  }
+}

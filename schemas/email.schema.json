@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/email.schema.json",
+  "title": "Email Draft / Sent Email",
+  "type": "object",
+  "required": ["id", "type", "tone", "subject", "to", "templateId", "htmlBody", "textBody", "status"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "isSample": { "type": "boolean" },
+    "type": { "enum": ["grant_enquiry", "application_submission", "fellowship_enquiry", "scholarship_enquiry", "partnership_proposal", "accelerator_application", "follow_up", "meeting_request", "thank_you"] },
+    "opportunityId": { "type": ["string", "null"] },
+    "applicationId": { "type": ["string", "null"] },
+    "tone": { "enum": ["formal", "warm_professional", "concise", "persuasive", "appreciative"] },
+    "templateId": { "type": "string", "pattern": "\\.html$" },
+    "subject": { "type": "string", "minLength": 1, "maxLength": 150 },
+    "to": { "type": "array", "items": { "type": "string", "format": "email" }, "minItems": 1 },
+    "cc": { "type": "array", "items": { "type": "string", "format": "email" } },
+    "bcc": { "type": "array", "items": { "type": "string", "format": "email" } },
+    "htmlBody": { "type": "string", "minLength": 1 },
+    "textBody": { "type": "string", "minLength": 1 },
+    "templateData": { "type": "object" },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "fileId": { "type": "string" },
+          "mimeType": { "type": "string" }
+        }
+      }
+    },
+    "generation": {
+      "type": "object",
+      "properties": {
+        "regenerationCount": { "type": "integer", "minimum": 0 },
+        "lastInstruction": { "type": ["string", "null"] },
+        "qualityChecks": { "type": "object", "additionalProperties": { "type": "boolean" } }
+      }
+    },
+    "status": { "enum": ["draft", "pending_approval", "approved", "rejected", "sending", "sent", "send_failed", "cancelled"] },
+    "approval": {
+      "type": ["object", "null"],
+      "properties": {
+        "approvedBy": { "type": "string" },
+        "approvedAt": { "type": "string", "format": "date-time" },
+        "contentHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "gmail": {
+      "type": ["object", "null"],
+      "properties": {
+        "messageId": { "type": "string" },
+        "threadId": { "type": "string" },
+        "sentAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "subject": "Enquiry: Example Digital Skills Innovation Grant",
+  "preheader": "A short enquiry from Tech2Grassroots Africa about your digital skills grant.",
+  "org_name": "Tech2Grassroots Africa",
+  "hub_name": "Kwara Innovation Lab (KIL)",
+  "greeting_name": "Programme Team",
+  "opportunity_name": "Example Digital Skills Innovation Grant",
+  "funder_name": "Example Foundation for Digital Inclusion",
+  "deadline_text": "31 March 2027",
+  "reference_line": "T2G-ENQ-SAMPLE-001",
+  "body_paragraphs_html": "<p style=\"margin:0 0 14px 0;\">We are an education technology and digital skills organisation based in Nigeria, and we would like to confirm that organisations like ours are eligible to apply.</p><p style=\"margin:0 0 14px 0;\">Could you please let us know whether there is an eligibility guide or a recommended point of contact for applicants?</p>",
+  "key_points_html": "<ul style=\"margin:0 0 14px 18px;padding:0;\"><li>Focus areas: digital skills, AI education and youth empowerment</li><li>Partnered with 15 schools and trained over 5,000 learners</li><li>Operates the Kwara Innovation Lab (KIL)</li></ul>",
+  "cta_label": "View programme page",
+  "cta_url": "https://example.org/grants/digital-skills",
+  "original_sent_date": "1 December 2026",
+  "followup_label": "First follow-up",
+  "sender_name": "Sample Sender",
+  "sender_title": "Programmes Lead",
+  "sender_email": "sender@example.org",
+  "sender_phone": "+234 000 000 0000",
+  "org_website": "https://example.org",
+  "disclaimer_text": "This is sample data."
+}

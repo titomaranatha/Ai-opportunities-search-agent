@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/application.schema.json",
+  "title": "Application",
+  "type": "object",
+  "required": ["id", "opportunityId", "status", "components"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "isSample": { "type": "boolean" },
+    "opportunityId": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["preparing", "needs_input", "in_review", "ready_for_submission", "submitted", "closed"] },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "status"],
+        "properties": {
+          "type": { "enum": ["grant_proposal", "application_responses", "organisation_profile", "project_summary", "impact_statement", "founder_biography", "project_budget", "cover_letter", "supporting_documents_checklist"] },
+          "title": { "type": "string" },
+          "content": { "type": ["string", "null"] },
+          "wordCount": { "type": "integer", "minimum": 0 },
+          "status": { "enum": ["not_started", "drafted", "needs_input", "reviewed", "final"] },
+          "sources": {
+            "type": "array",
+            "description": "Every factual claim must trace to an uploaded document.",
+            "items": {
+              "type": "object",
+              "required": ["documentId"],
+              "properties": {
+                "documentId": { "type": "string" },
+                "locator": { "type": "string" }
+              }
+            }
+          },
+          "needsInput": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "budget": {
+      "type": ["object", "null"],
+      "properties": {
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "lines": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["item", "amount"],
+            "properties": {
+              "item": { "type": "string" },
+              "amount": { "type": "number", "minimum": 0 },
+              "basis": { "type": "string" }
+            }
+          }
+        },
+        "total": { "type": "number", "minimum": 0 }
+      }
+    },
+    "checklist": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["requirement", "state"],
+        "properties": {
+          "requirement": { "type": "string" },
+          "state": { "enum": ["met", "partially_met", "missing", "not_applicable"] },
+          "evidenceDocumentId": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "review": {
+      "type": ["object", "null"],
+      "properties": {
+        "reviewedBy": { "type": "string" },
+        "reviewedAt": { "type": "string", "format": "date-time" },
+        "decision": { "enum": ["approved", "changes_requested", "rejected"] }
+      }
+    },
+    "submission": {
+      "type": ["object", "null"],
+      "properties": {
+        "method": { "enum": ["portal", "email", "form", "other"] },
+        "submittedBy": { "type": "string" },
+        "submittedAt": { "type": "string", "format": "date-time" },
+        "confirmationReference": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

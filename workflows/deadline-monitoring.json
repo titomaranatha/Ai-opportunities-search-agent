@@ -1,0 +1,190 @@
+{
+  "id": "WF-09",
+  "name": "Deadline Monitoring",
+  "version": "1.0.0",
+  "specType": "workflow-specification",
+  "description": "Scans active opportunities daily, sends internal reminders at 30, 14, 7, 3 and 1 days, warns when an application is not ready, and closes expired opportunities.",
+  "trigger": {
+    "type": "schedule",
+    "schedule": {
+      "cron": "0 7 * * *",
+      "timezone": "Africa/Lagos",
+      "settingsRef": "config/automation-settings.json#/schedules/deadlineMonitoring"
+    }
+  },
+  "inputs": [
+    {
+      "name": "asOfDate",
+      "type": "string",
+      "required": false,
+      "description": "ISO date override for testing."
+    }
+  ],
+  "steps": [
+    {
+      "id": "load-active",
+      "name": "Load active opportunities",
+      "type": "entity_read",
+      "description": "Read opportunities in verified, scored, pursue_approved, in_preparation, ready_for_submission or awaiting_response with deadline.type = fixed.",
+      "entities": [
+        "Opportunity",
+        "Application"
+      ],
+      "next": "compute-days-remaining"
+    },
+    {
+      "id": "compute-days-remaining",
+      "name": "Compute days remaining",
+      "type": "function",
+      "description": "Calendar days from today (Africa/Lagos) to deadline.date.",
+      "uses": "backend:computeDaysRemaining",
+      "next": "expire-passed"
+    },
+    {
+      "id": "expire-passed",
+      "name": "Expire passed deadlines",
+      "type": "entity_write",
+      "description": "Set opportunities whose deadline has passed (and which are not submitted) to expired when autoCloseExpired is true; cancel their scheduled follow-ups.",
+      "entities": [
+        "Opportunity",
+        "FollowUp"
+      ],
+      "setsStatus": {
+        "entity": "Opportunity",
+        "status": "expired"
+      },
+      "next": "select-reminders"
+    },
+    {
+      "id": "select-reminders",
+      "name": "Select reminders",
+      "type": "function",
+      "description": "Pick records whose days remaining equals a threshold (30, 14, 7, 3, 1) and that have not already received that threshold's reminder.",
+      "uses": "backend:selectReminders",
+      "output": "reminders[]",
+      "next": "assess-readiness"
+    },
+    {
+      "id": "assess-readiness",
+      "name": "Assess readiness",
+      "type": "function",
+      "description": "Compare application status and checklist gaps with days remaining; mark \"at risk\" if fewer than 7 days remain and the application is not in_review or ready_for_submission.",
+      "uses": "backend:assessReadiness",
+      "entities": [
+        "Application"
+      ],
+      "next": "send-internal-alerts"
+    },
+    {
+      "id": "send-internal-alerts",
+      "name": "Send internal alerts",
+      "type": "notify",
+      "description": "Create in-app Notifications and one daily digest email to INTERNAL_NOTIFICATION_EMAIL (internal staff only).",
+      "envVars": [
+        "INTERNAL_NOTIFICATION_EMAIL"
+      ],
+      "entities": [
+        "Notification"
+      ],
+      "next": "log-run"
+    },
+    {
+      "id": "log-run",
+      "name": "Log run",
+      "type": "entity_write",
+      "description": "Write counts of checked, reminded, at-risk and expired opportunities.",
+      "entities": [
+        "WorkflowLog"
+      ],
+      "next": "END"
+    }
+  ],
+  "aiInstructions": {
+    "used": false,
+    "reason": "Deadline arithmetic and thresholds are deterministic."
+  },
+  "integrations": [
+    {
+      "name": "Internal notification email",
+      "type": "base44_integration",
+      "base44Mapping": "Core.SendEmail to the internal address only (no external recipients)",
+      "envVars": [
+        "INTERNAL_NOTIFICATION_EMAIL"
+      ]
+    }
+  ],
+  "output": {
+    "format": "json",
+    "description": "Reminder notifications, at-risk flags and expired opportunities.",
+    "schemaRef": "schemas/opportunity.schema.json"
+  },
+  "errorHandling": {
+    "defaultPolicy": {
+      "retries": 2,
+      "backoff": "exponential",
+      "baseDelaySeconds": 5,
+      "timeoutSeconds": 120
+    },
+    "onUnrecoverableFailure": [
+      "Set the run status to \"failed\" and stop; never continue past a failed safety check.",
+      "Write a WorkflowLog entry with level \"error\" and the failing stepId.",
+      "Send an internal alert to INTERNAL_NOTIFICATION_EMAIL (internal only; never to external recipients)."
+    ],
+    "idempotency": "Every run carries a runId. Writes use natural keys (fingerprint, draftId, followUpId) so a retried run cannot create duplicates or send twice.",
+    "specificCases": [
+      {
+        "condition": "Opportunity has an invalid date",
+        "action": "Skip it, add redFlag \"invalid_deadline\" and include it in the digest."
+      },
+      {
+        "condition": "Rolling or unknown deadline",
+        "action": "Never expire; list in a \"no fixed deadline\" section."
+      }
+    ]
+  },
+  "approval": {
+    "required": false,
+    "rationale": "Internal notifications only. No external communication occurs."
+  },
+  "logging": {
+    "entity": "WorkflowLog",
+    "level": "info",
+    "correlationId": "runId",
+    "fields": [
+      "workflowId",
+      "runId",
+      "stepId",
+      "status",
+      "startedAt",
+      "durationMs",
+      "entityType",
+      "entityId",
+      "message",
+      "error"
+    ],
+    "events": [
+      "scan_started",
+      "reminder_sent",
+      "opportunity_expired",
+      "at_risk_flagged"
+    ],
+    "redaction": "Never log credentials, OAuth tokens or full email bodies. Log IDs and content hashes instead."
+  },
+  "handoff": [],
+  "base44": {
+    "entities": [
+      "Opportunity",
+      "Application",
+      "FollowUp",
+      "Notification",
+      "WorkflowLog"
+    ],
+    "backendFunctions": [
+      "computeDaysRemaining",
+      "selectReminders",
+      "assessReadiness",
+      "runDeadlineMonitoring"
+    ],
+    "automation": "Scheduled automation, daily 07:00 Africa/Lagos."
+  }
+}

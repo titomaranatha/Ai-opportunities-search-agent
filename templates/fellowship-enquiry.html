@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>{{subject}}</title>
+<style>
+  body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+  table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+  a { color: #4169E1; }
+  @media only screen and (max-width: 620px) {
+    .container { width: 100% !important; }
+    .px { padding-left: 20px !important; padding-right: 20px !important; }
+    .btn { display: block !important; text-align: center !important; }
+    .h1 { font-size: 22px !important; line-height: 28px !important; }
+    .label { width: 100% !important; display: block !important; padding-bottom: 0 !important; }
+    .value { width: 100% !important; display: block !important; }
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background-color:#FFFFFF;">
+<div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">{{preheader}}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="background-color:#FFFFFF;">
+  <tr>
+    <td align="center" style="padding:24px 12px;">
+      <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;background-color:#FFFFFF;border:1px solid #E2E8F0;border-top:4px solid #4169E1;">
+        <tr>
+          <td class="px" style="padding:24px 32px 8px 32px;font-family:Helvetica, Arial, sans-serif;">
+            <div style="font-size:16px;line-height:22px;font-weight:bold;color:#1E3A8A;">{{org_name}}</div>
+            <div style="font-size:12px;line-height:18px;color:#64748B;">{{hub_name}}</div>
+          </td>
+        </tr>
+        <tr>
+          <td class="px" style="padding:16px 32px 0 32px;font-family:Helvetica, Arial, sans-serif;">
+            <div style="font-size:12px;line-height:16px;letter-spacing:1px;text-transform:uppercase;color:#4169E1;font-weight:bold;">Fellowship and scholarship enquiry</div>
+            <h1 class="h1" style="margin:8px 0 0 0;font-size:24px;line-height:32px;font-weight:bold;color:#1E3A8A;font-family:Helvetica, Arial, sans-serif;">Enquiry about {{opportunity_name}}</h1>
+          </td>
+        </tr>
+        <tr>
+          <td class="px" style="padding:20px 32px 0 32px;font-family:Helvetica, Arial, sans-serif;font-size:15px;line-height:24px;color:#334155;">
+            <p style="margin:0 0 14px 0;">Dear {{greeting_name}},</p>
+            <p style="margin:0 0 14px 0;">I am writing from {{org_name}} to ask about {{opportunity_name}}, offered by {{funder_name}}, and how best to apply.</p>
+            {{{body_paragraphs_html}}}
+          </td>
+        </tr>
+        <tr>
+          <td class="px" style="padding:8px 32px 0 32px;font-family:Helvetica, Arial, sans-serif;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#EFF3FD;border-left:3px solid #4169E1;">
+              <tr>
+                <td style="padding:14px 18px;">
+                  <div style="font-size:12px;line-height:16px;letter-spacing:1px;text-transform:uppercase;color:#1E3A8A;font-weight:bold;padding-bottom:6px;font-family:Helvetica, Arial, sans-serif;">Opportunity details</div>
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td class="label" width="130" valign="top" style="padding:6px 12px 6px 0;font-size:13px;line-height:20px;color:#64748B;font-family:Helvetica, Arial, sans-serif;">Opportunity</td>
+                <td class="value" valign="top" style="padding:6px 0;font-size:14px;line-height:20px;color:#334155;font-family:Helvetica, Arial, sans-serif;">{{opportunity_name}}</td>
+              </tr>
+              <tr>
+                <td class="label" width="130" valign="top" style="padding:6px 12px 6px 0;font-size:13px;line-height:20px;color:#64748B;font-family:Helvetica, Arial, sans-serif;">Offered by</td>
+                <td class="value" valign="top" style="padding:6px 0;font-size:14px;line-height:20px;color:#334155;font-family:Helvetica, Arial, sans-serif;">{{funder_name}}</td>
+              </tr>
+              <tr>
+                <td class="label" width="130" valign="top" style="padding:6px 12px 6px 0;font-size:13px;line-height:20px;color:#64748B;font-family:Helvetica, Arial, sans-serif;">Deadline</td>
+                <td class="value" valign="top" style="padding:6px 0;font-size:14px;line-height:20px;color:#334155;font-family:Helvetica, Arial, sans-serif;">{{deadline_text}}</td>
+              </tr>
+              <tr>
+                <td class="label" width="130" valign="top" style="padding:6px 12px 6px 0;font-size:13px;line-height:20px;color:#64748B;font-family:Helvetica, Arial, sans-serif;">Our reference</td>
+                <td class="value" valign="top" style="padding:6px 0;font-size:14px;line-height:20px;color:#334155;font-family:Helvetica, Arial, sans-serif;">{{reference_line}}</td>
+              </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td class="px" style="padding:20px 32px 0 32px;font-family:Helvetica, Arial, sans-serif;font-size:15px;line-height:24px;color:#334155;">
+            <div style="font-size:14px;line-height:20px;font-weight:bold;color:#1E3A8A;padding-bottom:4px;">Background</div>
+            {{{key_points_html}}}
+          </td>
+        </tr>
+        <tr>
+          <td class="px" style="padding:20px 32px 0 32px;font-family:Helvetica, Arial, sans-serif;font-size:15px;line-height:24px;color:#334155;">
+            <p style="margin:0 0 14px 0;">The page we have referred to is here:</p>
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td bgcolor="#4169E1" style="border-radius:4px;">
+                  <a class="btn" href="{{cta_url}}" target="_blank" style="display:inline-block;padding:12px 24px;font-family:Helvetica, Arial, sans-serif;font-size:15px;line-height:20px;font-weight:bold;color:#FFFFFF;text-decoration:none;border-radius:4px;background-color:#4169E1;">{{cta_label}}</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td class="px" style="padding:24px 32px 8px 32px;font-family:Helvetica, Arial, sans-serif;font-size:15px;line-height:24px;color:#334155;">
+            <p style="margin:0 0 4px 0;">Thank you for your time and consideration.</p>
+            <p style="margin:0 0 16px 0;">Kind regards,</p>
+            {{{signature_html}}}
+          </td>
+        </tr>
+        <tr>
+          <td class="px" style="padding:12px 32px 24px 32px;border-top:1px solid #E2E8F0;font-family:Helvetica, Arial, sans-serif;font-size:11px;line-height:16px;color:#64748B;">
+            This message was sent by {{org_name}}. If it reached you in error, please reply and let us know so that we can update our records.
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

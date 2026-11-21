@@ -1,0 +1,18 @@
+{
+  "version": "1.0.0",
+  "categories": [
+    { "id": "grant", "label": "Grants and Funding", "keywords": ["grant", "funding call", "call for proposals", "seed funding", "non-dilutive funding"], "defaultPriority": "high" },
+    { "id": "fellowship", "label": "Fellowships", "keywords": ["fellowship", "fellows programme", "leadership fellowship"], "defaultPriority": "medium" },
+    { "id": "scholarship", "label": "Scholarships", "keywords": ["scholarship", "bursary", "tuition award"], "defaultPriority": "medium" },
+    { "id": "hackathon", "label": "Hackathons", "keywords": ["hackathon", "innovation sprint", "buildathon"], "defaultPriority": "medium" },
+    { "id": "funded_training", "label": "Funded Training Programmes", "keywords": ["fully funded training", "sponsored training", "capacity building programme"], "defaultPriority": "medium" },
+    { "id": "international_funded", "label": "International Fully Funded Opportunities", "keywords": ["fully funded", "international programme Africa", "all expenses paid"], "defaultPriority": "medium" },
+    { "id": "accelerator", "label": "Startup Accelerators", "keywords": ["accelerator", "incubator", "startup programme", "venture studio"], "defaultPriority": "high" },
+    { "id": "innovation_challenge", "label": "Innovation Challenges", "keywords": ["innovation challenge", "prize", "competition", "pitch competition"], "defaultPriority": "medium" },
+    { "id": "entrepreneurship_programme", "label": "Entrepreneurship Programmes", "keywords": ["entrepreneurship programme", "founder programme", "SME support", "youth entrepreneurship"], "defaultPriority": "medium" },
+    { "id": "tech_ai_funding", "label": "Technology and AI Funding", "keywords": ["AI for good", "AI grant", "tech for development", "digital public goods", "cloud credits"], "defaultPriority": "high" },
+    { "id": "research_development_grant", "label": "Research and Development Grants", "keywords": ["research grant", "R&D funding", "innovation research", "education research grant"], "defaultPriority": "medium" }
+  ],
+  "regionModifiers": ["Nigeria", "Africa", "Sub-Saharan Africa", "developing countries", "global open call"],
+  "sectorKeywords": ["edtech", "digital skills", "artificial intelligence", "youth empowerment", "STEM education", "innovation hub", "entrepreneurship"]
+}
